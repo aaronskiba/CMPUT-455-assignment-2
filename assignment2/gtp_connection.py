@@ -13,6 +13,7 @@ import numpy as np
 import re
 from sys import stdin, stdout, stderr
 from typing import Any, Callable, Dict, List, Tuple
+import time
 
 from board_base import (
     is_black_white,
@@ -28,6 +29,8 @@ from board_base import (
 from board import GoBoard
 from board_util import GoBoardUtil
 from engine import GoEngine
+
+MAX_SECONDS = 1
 
 class GtpConnection:
     def __init__(self, go_engine: GoEngine, board: GoBoard, debug_mode: bool = False) -> None:
@@ -60,7 +63,8 @@ class GtpConnection:
             "legal_moves": self.legal_moves_cmd,
             "gogui-rules_legal_moves": self.gogui_rules_legal_moves_cmd,
             "gogui-rules_final_result": self.gogui_rules_final_result_cmd,
-            "solve": self.solve_cmd
+            "solve": self.solve_cmd,
+            "timelimit": self.timelimit,
         }
 
         # argmap is used for argument checking
@@ -369,6 +373,17 @@ class GtpConnection:
     def solve_cmd(self, args: List[str]) -> None:
         # remove this respond and implement this method
         self.respond('Implement This for Assignment 2')
+
+        # To measure how much time some piece of code has used, time.process_time() is a simple way
+    # def timeSearch(name, search, root):
+    #     start = time.process_time()
+    #     result = search(root)
+    #     timeUsed = time.process_time() - start
+    #     print("{} Result {} Time used: {:.4f}".format(name, result,
+    #       timeUsed))
+
+    def timelimit(self, args: List[str]) -> None:
+        MAX_SECONDS = int(args[0])
 
     """
     ==========================================================================
