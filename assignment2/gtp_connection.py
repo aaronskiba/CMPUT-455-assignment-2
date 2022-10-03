@@ -30,7 +30,9 @@ from board import GoBoard
 from board_util import GoBoardUtil
 from engine import GoEngine
 
-MAX_SECONDS = 1
+START_TIME = ""
+MAX_TIME_LIMIT = 1
+CURRENT_TIME_LIMIT = MAX_TIME_LIMIT
 
 class GtpConnection:
     def __init__(self, go_engine: GoEngine, board: GoBoard, debug_mode: bool = False) -> None:
@@ -64,7 +66,7 @@ class GtpConnection:
             "gogui-rules_legal_moves": self.gogui_rules_legal_moves_cmd,
             "gogui-rules_final_result": self.gogui_rules_final_result_cmd,
             "solve": self.solve_cmd,
-            "timelimit": self.timelimit,
+            "timelimit": self.time_limit,
         }
 
         # argmap is used for argument checking
@@ -105,8 +107,10 @@ class GtpConnection:
             return
         # Strip leading numbers from regression tests
         if command[0].isdigit():
+            if command[1] in ["solve", "genmove"]:
+                # set CURRENT_TIME_LIMIT
+                CURRENT_TIME_LIMIT = min(int(command[1], MAX_TIME_LIMIT))
             command = re.sub("^\d+", "", command).lstrip()
-
         elements: List[str] = command.split()
         if not elements:
             return
@@ -352,7 +356,11 @@ class GtpConnection:
     
 
     def genmove_cmd(self, args: List[str]) -> None:
-        """ generate a move for color args[0] in {'b','w'} """
+        """
+        generate a move for color args[0] in {'b','w'}
+        If the game is not over yet, call the solve() command.
+        If solve() returns False, play a random move     
+        """
         # change this method to use your solver
         board_color = args[0].lower()
         color = color_to_int(board_color)
@@ -368,11 +376,70 @@ class GtpConnection:
             self.respond(move_as_string)
         else:
             self.respond("Illegal move: {}".format(move_as_string))
-            
+
+
+    def is_timeout(self) -> bool:
+        return bool(time.process_time() - START_TIME > CURRENT_TIME_LIMIT)
+
+    def get_solution(self, board, color) -> dict:
+        """
+        Attempts to solve a go board
+        @return: a dict {"winning_color": color (or opponent(color)), "winning_move": a winning move (or None))}
+        @params:
+        board - the current state of the board
+        color - corresponds to the player who's turn it is
+        """
+        # get a list of legal moves corresponding to the current state of the board and color to play
+        legal_moves = GoBoardUtil.generate_legal_moves(board, color)
+        if not legal_moves: # TODO: add or check self.is_timeout() {these two have different implications}
+            return {"winning_color": opponent(color), "winning_move": None } # TODO: handle self.is_timeout()
+        for move in legal_moves:
+            # play the move on a copy of the board
+            board_copy: GoBoard = GoBoard.copy(board)
+            board_copy.play_move(move, color) # changed "point" to "move"
+
+            # solve the board state for the opponent
+            outcome = self.get_solution(board_copy, opponent(color))
+            # if the player's move was a winning move for them
+            if outcome["winning_color"] == color:
+                # return their color and the winning move
+                return {"winning_color": color, "winning_move": move }   
+        # for loop is exited. Thus, there are no winning moves fo the player
+        return {"winning_color": opponent(color), "winning_move": None }
             
     def solve_cmd(self, args: List[str]) -> None:
-        # remove this respond and implement this method
-        self.respond('Implement This for Assignment 2')
+        """
+        Attempts to compute the winner of the current position,
+        assuming perfect play by both, within the current time limit.
+        GTP response is in the following format:
+        = winner [move]
+        winner is "b", "w", or "unknown"
+        - winner is "unknown" if the board cannot be solved within the current time limit
+        - If winner ("b" or "w") is the current player, then move should include a winning move.
+        - If the winner {"b" or "w"} is not the current player, then no move should be included. 
+        """
+        START_TIME = time.process_time()
+        # board_color = args[0].lower()
+        # color = color_to_int(board_color)
+        color = self.board.current_player
+        solution = self.get_solution(self.board, color) # should this be self.board.current_player?
+        color_as_string = int_to_color(solution["winning_color"])[0]
+
+        if solution["winning_color"] == color:
+            move = solution["winning_move"]
+            move_coord = point_to_coord(move, self.board.size)
+            move_as_string = format_point(move_coord)
+
+            self.respond("[" + color_as_string + " " + move_as_string + "]")
+        else:
+            self.respond("[" + color_as_string + "]")
+
+        #     self.respond("[unknown]")
+        # elif winning_color == board_color:
+        #     self.respond("[" + board_color + " " + winning_move + "]")
+        # else:
+        #     board_color = "bw".replace(board_color,"")
+        #     self.respond("[" + board_color + "]")
 
         # To measure how much time some piece of code has used, time.process_time() is a simple way
     # def timeSearch(name, search, root):
@@ -382,8 +449,9 @@ class GtpConnection:
     #     print("{} Result {} Time used: {:.4f}".format(name, result,
     #       timeUsed))
 
-    def timelimit(self, args: List[str]) -> None:
+    def time_limit(self, args: List[str]) -> None:
         MAX_SECONDS = int(args[0])
+        self.respond()
 
     """
     ==========================================================================
@@ -426,8 +494,12 @@ def move_to_coord(point_str: str, board_size: int) -> Tuple[int, int]:
     return row, col
 
 
-
 def color_to_int(c: str) -> int:
     """convert character to the appropriate integer code"""
     color_to_int = {"b": BLACK, "w": WHITE, "e": EMPTY, "BORDER": BORDER}
     return color_to_int[c]
+
+def int_to_color(i: int) -> str:
+    """convert integer code to the appropriate color"""
+    int_to_color = {BLACK: "black", WHITE: "white", EMPTY: "e", BORDER: "BORDER"}
+    return int_to_color[i]
