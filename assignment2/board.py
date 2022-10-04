@@ -87,9 +87,42 @@ class GoBoard(object):
         This method tries to play the move on a temporary copy of the board.
         This prevents the board from being modified by the move
         """
-        board_copy: GoBoard = self.copy()
-        can_play_move = board_copy.play_move(point, color)
-        return can_play_move
+        # board_copy: GoBoard = self.copy()
+        # can_play_move = board_copy.play_move(point, color)
+        # return can_play_move
+
+        assert is_black_white(color)
+        
+        #if point is occupied
+        if self.board[point] != EMPTY:
+            return False
+            
+        opp_color = opponent(color)
+        #in_enemy_eye = self._is_surrounded(point, opp_color) #TODO: determine if self._is_surrounded() is of utility
+        # play the move
+        self.board[point] = color
+        neighbors = self._neighbors(point)
+        
+        #check for capturing
+        for nb in neighbors:
+            if self.board[nb] == opp_color:
+                captured = self._detect_and_process_capture(nb)
+                if captured:
+                #undo capturing move
+                    self.board[point] = EMPTY
+                    return False
+                    
+                    
+        #check for suicide
+        block = self._block_of(point)
+        if not self._has_liberty(block):  
+            # undo suicide move
+            self.board[point] = EMPTY
+            return False
+        
+        # reset board state and return True
+        self.board[point] = EMPTY
+        return True
 
         
            
@@ -202,7 +235,8 @@ class GoBoard(object):
         Play a move of color on point
         Returns whether move was legal
         """
-        
+        self.board[point] = color
+        return
         assert is_black_white(color)
         
         #if point is occupied
@@ -210,7 +244,7 @@ class GoBoard(object):
             return False
             
         opp_color = opponent(color)
-        in_enemy_eye = self._is_surrounded(point, opp_color)
+        #in_enemy_eye = self._is_surrounded(point, opp_color) #TODO: determine if self._is_surrounded() is of utility
         self.board[point] = color
         neighbors = self._neighbors(point)
         
