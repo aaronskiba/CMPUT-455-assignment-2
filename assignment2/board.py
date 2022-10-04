@@ -152,8 +152,7 @@ class GoBoard(object):
         block is a numpy boolean array
         """
         for stone in where1d(block):
-            empty_nbs = self.neighbors_of_color(stone, EMPTY)
-            if empty_nbs:
+            if self.find_neighbor_of_color(stone, EMPTY):
                 return True
         return False
         
@@ -234,6 +233,16 @@ class GoBoard(object):
         
         self.current_player = opponent(color)
         return True
+
+    def find_neighbor_of_color(self, point, color):
+        """
+        Searches the neighbors of point.
+        Returns True if at least one neighbor is same color as point.
+        """
+        for nb in self._neighbors(point):
+            if self.get_color(nb) == color:
+                return nb
+        return None
 
     def neighbors_of_color(self, point: GO_POINT, color: GO_COLOR) -> List:
         """ List of neighbors of point of given color """
