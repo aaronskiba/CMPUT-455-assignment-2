@@ -47,7 +47,7 @@ class GoBoard(object):
         """
         Creates a Go board of given size
         """
-        assert 2 <= size <= MAXSIZE
+        # assert 2 <= size <= MAXSIZE
         self.reset(size)
 
     def reset(self, size: int) -> None:
@@ -65,10 +65,10 @@ class GoBoard(object):
         
     def copy(self) -> 'GoBoard':
         b = GoBoard(self.size)
-        assert b.NS == self.NS
-        assert b.WE == self.WE
+        # assert b.NS == self.NS
+        # assert b.WE == self.WE
         b.current_player = self.current_player
-        assert b.maxpoint == self.maxpoint
+        # assert b.maxpoint == self.maxpoint
         b.board = np.copy(self.board)
         return b
 
@@ -91,7 +91,7 @@ class GoBoard(object):
         # can_play_move = board_copy.play_move(point, color)
         # return can_play_move
 
-        assert is_black_white(color)
+        # assert is_black_white(color)
         
         #if point is occupied
         if self.board[point] != EMPTY:
@@ -134,8 +134,8 @@ class GoBoard(object):
         return where1d(self.board == EMPTY)
 
     def row_start(self, row: int) -> int:
-        assert row >= 1
-        assert row <= self.size
+        # assert row >= 1
+        # assert row <= self.size
         return row * self.NS + 1
         
         
@@ -197,7 +197,7 @@ class GoBoard(object):
         all the points in the block 
         """
         color: GO_COLOR = self.get_color(stone)
-        assert is_black_white(color)
+        # assert is_black_white(color)
         return self.connected_component(stone)
 
     def connected_component(self, point: GO_POINT) -> np.ndarray:
@@ -207,7 +207,7 @@ class GoBoard(object):
         marker = np.full(self.maxpoint, False, dtype=np.bool_)
         pointstack = [point]
         color: GO_COLOR = self.get_color(point)
-        assert is_black_white_empty(color)
+        # assert is_black_white_empty(color)
         marker[point] = True
         while pointstack:
             p = pointstack.pop()
@@ -237,36 +237,37 @@ class GoBoard(object):
         """
         self.board[point] = color
         return
-        assert is_black_white(color)
+
+        # assert is_black_white(color)
         
-        #if point is occupied
-        if self.board[point] != EMPTY:
-            return False
+        # #if point is occupied
+        # if self.board[point] != EMPTY:
+        #     return False
             
-        opp_color = opponent(color)
-        #in_enemy_eye = self._is_surrounded(point, opp_color) #TODO: determine if self._is_surrounded() is of utility
-        self.board[point] = color
-        neighbors = self._neighbors(point)
+        # opp_color = opponent(color)
+        # #in_enemy_eye = self._is_surrounded(point, opp_color) #TODO: determine if self._is_surrounded() is of utility
+        # self.board[point] = color
+        # neighbors = self._neighbors(point)
         
-        #check for capturing
-        for nb in neighbors:
-            if self.board[nb] == opp_color:
-                captured = self._detect_and_process_capture(nb)
-                if captured:
-                #undo capturing move
-                    self.board[point] = EMPTY
-                    return False
+        # #check for capturing
+        # for nb in neighbors:
+        #     if self.board[nb] == opp_color:
+        #         captured = self._detect_and_process_capture(nb)
+        #         if captured:
+        #         #undo capturing move
+        #             self.board[point] = EMPTY
+        #             return False
                     
                     
-        #check for suicide
-        block = self._block_of(point)
-        if not self._has_liberty(block):  
-            # undo suicide move
-            self.board[point] = EMPTY
-            return False
+        # #check for suicide
+        # block = self._block_of(point)
+        # if not self._has_liberty(block):  
+        #     # undo suicide move
+        #     self.board[point] = EMPTY
+        #     return False
         
-        self.current_player = opponent(color)
-        return True
+        # self.current_player = opponent(color)
+        # return True
 
     def find_neighbor_of_color(self, point, color):
         """
