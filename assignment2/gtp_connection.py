@@ -30,10 +30,6 @@ from board import GoBoard
 from board_util import GoBoardUtil
 from engine import GoEngine
 
-START_TIME = ""
-MAX_TIME_LIMIT = 1
-CURRENT_TIME_LIMIT = MAX_TIME_LIMIT
-
 class GtpConnection:
     def __init__(self, go_engine: GoEngine, board: GoBoard, debug_mode: bool = False, \
         start_time: float = 0.0, time_limit: int = 1, is_time_out: bool = False) -> None:
@@ -378,6 +374,10 @@ class GtpConnection:
         else:
             self.respond("Illegal move: {}".format(move_as_string))
 
+
+    def is_timeout(self) -> bool:
+        return bool(time.process_time() - START_TIME > CURRENT_TIME_LIMIT)
+
     def set_start_time(self):
         self.start_time = time.process_time()
 
@@ -385,9 +385,9 @@ class GtpConnection:
         """
         Returns a boolean corresponding to whether the elapsed time has exceeded the time limit
         """
-        self.is_time_out = bool(time.process_time() - self.start_time > self.time_limit)
+        self.is_time_out = bool(time.process_time() - self.start_time > self.current_time_limit)
 
-    def get_solution(self, board, color) -> dict:
+    def get_outcome(self, board, color) -> dict:
         """
         Attempts to solve a go board
         @return: a dict {"winning_color": color (or opponent(color)), "winning_move": a winning move (or None))}
@@ -395,6 +395,9 @@ class GtpConnection:
         board - the current state of the board
         color - corresponds to the player who's turn it is
         """
+        # if (time.process_time() - self.start_time) > self.current_time_limit:
+        #     self.is_time_out = True
+        #     return
         # get a list of legal moves corresponding to the current state of the board and color to play
         legal_moves = GoBoardUtil.generate_legal_moves(board, color)
         if not legal_moves: # TODO: add or check self.is_timeout() {these two have different implications}
@@ -403,10 +406,10 @@ class GtpConnection:
             # play the move on a copy of the board
             board_copy: GoBoard = GoBoard.copy(board)
             board_copy.play_move(move, color) # changed "point" to "move"
-
             # solve the board state for the opponent
-            outcome = self.get_solution(board_copy, opponent(color))
+            outcome = self.get_outcome(board_copy, opponent(color))
             # if the player's move was a winning move for them
+            #if not self.is_time_out and outcome["winning_color"] == color:
             if outcome["winning_color"] == color:
                 # return their color and the winning move
                 return {"winning_color": color, "winning_move": move }   
@@ -424,19 +427,22 @@ class GtpConnection:
         - If winner ("b" or "w") is the current player, then move should include a winning move.
         - If the winner {"b" or "w"} is not the current player, then no move should be included. 
         """
-        START_TIME = time.process_time()
         # board_color = args[0].lower()
         # color = color_to_int(board_color)
         color = self.board.current_player
-        outcome = self.get_solution(self.board, color) # should this be self.board.current_player?
-        color_as_string = int_to_color(outcome["winning_color"])[0]
+        total_time = 0
+        num = 20
+        for i in range(num):
+            self.set_start_time()
+            outcome = self.get_outcome(self.board, color)
+            total_time += time.process_time() - self.start_time
 
-        if outcome["winning_color"] == color:
-            move = outcome["winning_move"]
-            move_coord = point_to_coord(move, self.board.size)
-            move_as_string = format_point(move_coord)
+        print("Avg time : {:.4f}".format(total_time/num))
 
-            self.respond("[" + color_as_string + " " + move_as_string + "]")
+
+        if self.is_time_out:
+            self.respond("[unknown]")
+        
         else:
             # get first letter of string representation color
             color_as_string = int_to_color(outcome["winning_color"])[0]
@@ -495,7 +501,6 @@ def move_to_coord(point_str: str, board_size: int) -> Tuple[int, int]:
     row = int(s[1:])
         
     return row, col
-
 
 def color_to_int(c: str) -> int:
     """convert character to the appropriate integer code"""
