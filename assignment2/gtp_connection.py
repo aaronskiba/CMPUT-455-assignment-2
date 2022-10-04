@@ -338,11 +338,12 @@ class GtpConnection:
                 )
                 return
             
-            success = self.board.play_move(move, color)
+            success = self.board.is_legal(move, color)
             if not success:
                 self.respond('illegal move')
                 return
             else:
+                self.board.play_move(move, color)
                 self.debug_msg(
                     "Move: {}\nBoard:\n{}\n".format(board_move, self.board2d())
                 )
@@ -431,7 +432,7 @@ class GtpConnection:
         # color = color_to_int(board_color)
         color = self.board.current_player
         total_time = 0
-        num = 20
+        num = 100
         for i in range(num):
             self.set_start_time()
             outcome = self.get_outcome(self.board, color)
