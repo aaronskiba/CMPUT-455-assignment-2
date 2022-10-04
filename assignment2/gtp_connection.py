@@ -376,7 +376,7 @@ class GtpConnection:
 
 
     def is_timeout(self) -> bool:
-        return bool(time.process_time() - START_TIME > CURRENT_TIME_LIMIT)
+        return bool((time.process_time() - self.start_time) > self.time_limit)
 
     def set_start_time(self):
         self.start_time = time.process_time()
@@ -385,7 +385,7 @@ class GtpConnection:
         """
         Returns a boolean corresponding to whether the elapsed time has exceeded the time limit
         """
-        self.is_time_out = bool(time.process_time() - self.start_time > self.current_time_limit)
+        self.is_time_out = bool(time.process_time() - self.start_time > self.time_limit)
 
     def get_outcome(self, board, color) -> dict:
         """
