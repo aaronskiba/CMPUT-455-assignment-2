@@ -35,7 +35,8 @@ MAX_TIME_LIMIT = 1
 CURRENT_TIME_LIMIT = MAX_TIME_LIMIT
 
 class GtpConnection:
-    def __init__(self, go_engine: GoEngine, board: GoBoard, debug_mode: bool = False) -> None:
+    def __init__(self, go_engine: GoEngine, board: GoBoard, debug_mode: bool = False, \
+        start_time: float = 0.0, time_limit: int = 1, is_time_out: bool = False) -> None:
         """
         Manage a GTP connection for a Go-playing engine
 
@@ -46,6 +47,9 @@ class GtpConnection:
         board:
             Represents the current board state.
         """
+        self.start_time = start_time
+        self.time_limit = time_limit
+        self.is_time_out = is_time_out
         self._debug_mode: bool = debug_mode
         self.go_engine = go_engine
         self.board: GoBoard = board
@@ -66,7 +70,7 @@ class GtpConnection:
             "gogui-rules_legal_moves": self.gogui_rules_legal_moves_cmd,
             "gogui-rules_final_result": self.gogui_rules_final_result_cmd,
             "solve": self.solve_cmd,
-            "timelimit": self.time_limit,
+            "timelimit": self.set_time_limit,
         }
 
         # argmap is used for argument checking
@@ -107,9 +111,6 @@ class GtpConnection:
             return
         # Strip leading numbers from regression tests
         if command[0].isdigit():
-            if command[1] in ["solve", "genmove"]:
-                # set CURRENT_TIME_LIMIT
-                CURRENT_TIME_LIMIT = min(int(command[1], MAX_TIME_LIMIT))
             command = re.sub("^\d+", "", command).lstrip()
         elements: List[str] = command.split()
         if not elements:
@@ -377,9 +378,14 @@ class GtpConnection:
         else:
             self.respond("Illegal move: {}".format(move_as_string))
 
+    def set_start_time(self):
+        self.start_time = time.process_time()
 
-    def is_timeout(self) -> bool:
-        return bool(time.process_time() - START_TIME > CURRENT_TIME_LIMIT)
+    def set_is_time_out(self) -> bool:
+        """
+        Returns a boolean corresponding to whether the elapsed time has exceeded the time limit
+        """
+        self.is_time_out = bool(time.process_time() - self.start_time > self.time_limit)
 
     def get_solution(self, board, color) -> dict:
         """
@@ -422,35 +428,32 @@ class GtpConnection:
         # board_color = args[0].lower()
         # color = color_to_int(board_color)
         color = self.board.current_player
-        solution = self.get_solution(self.board, color) # should this be self.board.current_player?
-        color_as_string = int_to_color(solution["winning_color"])[0]
+        outcome = self.get_solution(self.board, color) # should this be self.board.current_player?
+        color_as_string = int_to_color(outcome["winning_color"])[0]
 
-        if solution["winning_color"] == color:
-            move = solution["winning_move"]
+        if outcome["winning_color"] == color:
+            move = outcome["winning_move"]
             move_coord = point_to_coord(move, self.board.size)
             move_as_string = format_point(move_coord)
 
             self.respond("[" + color_as_string + " " + move_as_string + "]")
         else:
-            self.respond("[" + color_as_string + "]")
+            # get first letter of string representation color
+            color_as_string = int_to_color(outcome["winning_color"])[0]
 
-        #     self.respond("[unknown]")
-        # elif winning_color == board_color:
-        #     self.respond("[" + board_color + " " + winning_move + "]")
-        # else:
-        #     board_color = "bw".replace(board_color,"")
-        #     self.respond("[" + board_color + "]")
+            if outcome["winning_color"] == color:
+                move = outcome["winning_move"]
+                move_coord = point_to_coord(move, self.board.size)
+                move_as_string = format_point(move_coord)
 
-        # To measure how much time some piece of code has used, time.process_time() is a simple way
-    # def timeSearch(name, search, root):
-    #     start = time.process_time()
-    #     result = search(root)
-    #     timeUsed = time.process_time() - start
-    #     print("{} Result {} Time used: {:.4f}".format(name, result,
-    #       timeUsed))
+                self.respond("[" + color_as_string + " " + move_as_string + "]")
+            else:
+                self.respond("[" + color_as_string + "]")
 
-    def time_limit(self, args: List[str]) -> None:
-        MAX_SECONDS = int(args[0])
+        self.is_time_out = False      
+
+    def set_time_limit(self, args: List[str]) -> None:
+        self.time_limit = int(args[0])
         self.respond()
 
     """
