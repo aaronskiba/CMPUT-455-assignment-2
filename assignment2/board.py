@@ -43,6 +43,9 @@ The board is stored as a one-dimensional array of GO_POINT in self.board.
 See GoBoardUtil.coord_to_point for explanations of the array encoding.
 """
 class GoBoard(object):
+
+    LIBERTY_FOUND = False
+
     def __init__(self, size: int):
         """
         Creates a Go board of given size
@@ -81,51 +84,106 @@ class GoBoard(object):
 
         
         
+    # def is_legal(self, point: GO_POINT, color: GO_COLOR) -> bool:
+    #     """
+    #     Check whether it is legal for color to play on point
+    #     This method tries to play the move on a temporary copy of the board.
+    #     This prevents the board from being modified by the move
+    #     """
+
+    #     # board_copy: GoBoard = self.copy()
+    #     # can_play_move = board_copy.play_move(point, color)
+    #     # return can_play_move
+
+    #     assert is_black_white(color)
+        
+    #     if self.board[point] != EMPTY:
+    #         return False
+            
+
+    #     opp_color = opponent(color)
+    #     # in_enemy_eye = self._is_surrounded(point, opp_color)
+    #     self.board[point] = color
+    #     neighbors = self._neighbors(point)
+        
+    #     #check for capturing
+    #     for nb in neighbors:
+    #         if self.board[nb] == opp_color:
+    #             captured = self._detect_and_process_capture(nb)
+    #             if captured:
+    #             #undo capturing move
+    #                 self.board[point] = EMPTY
+    #                 return False
+                    
+                    
+    #     #check for suicide
+    #     block = self._block_of(point)
+    #     if not self._has_liberty(block):  
+    #         # undo suicide move
+    #         self.board[point] = EMPTY
+    #         return False
+        
+    #     # undo legal move
+    #     self.board[point] = EMPTY
+    #     # self.current_player = opponent(color)
+    #     return True
+
+
     def is_legal(self, point: GO_POINT, color: GO_COLOR) -> bool:
         """
         Check whether it is legal for color to play on point
         This method tries to play the move on a temporary copy of the board.
         This prevents the board from being modified by the move
         """
-
-        # board_copy: GoBoard = self.copy()
-        # can_play_move = board_copy.play_move(point, color)
-        # return can_play_move
-
-        assert is_black_white(color)
         
+        def restore_defaults():
+            self.board[point] = EMPTY
+            self.LIBERTY_FOUND = False
+
+        #if point is occupied
         if self.board[point] != EMPTY:
             return False
-            
 
-        opp_color = opponent(color)
-        # in_enemy_eye = self._is_surrounded(point, opp_color)
         self.board[point] = color
-        neighbors = self._neighbors(point)
-        
-        #check for capturing
-        for nb in neighbors:
-            if self.board[nb] == opp_color:
-                captured = self._detect_and_process_capture(nb)
-                if captured:
-                #undo capturing move
-                    self.board[point] = EMPTY
-                    return False
-                    
-                    
-        #check for suicide
-        block = self._block_of(point)
-        if not self._has_liberty(block):  
-            # undo suicide move
-            self.board[point] = EMPTY
-            return False
-        
-        # undo legal move
-        self.board[point] = EMPTY
-        # self.current_player = opponent(color)
-        return True
 
+        # search for suicide
+        self.depth_first_liberty_search([], point, color)
+        print("suicide")
+        if not self.LIBERTY_FOUND:
+            restore_defaults()
+            return False
+
+        self.LIBERTY_FOUND = False
+        # search for capture
+        for nb in self._neighbors(point):
+            if self.get_color(nb) != opponent(color):
+                continue
+            self.depth_first_liberty_search([], nb, opponent(color))
+            if not self.LIBERTY_FOUND: # if any opponent nb has no liberties
+                print("capture")
+                restore_defaults()
+                return False
+
+        # else move is legal
+        restore_defaults()
+        return True
         
+
+    def depth_first_liberty_search(self, visited: list, stone, color) -> bool:
+        """
+        Check for at least one liberty
+        """
+        if self.LIBERTY_FOUND: # end dfs
+            return
+        if stone not in visited: # ignore visited stones
+            visited.append(stone)
+            for nb in self._neighbors(stone):
+                if self.get_color(nb) == EMPTY:
+                    self.LIBERTY_FOUND = True # our liberty is found
+                    return
+                if self.get_color(nb) == color: # nb is part of block
+                    self.depth_first_liberty_search(visited, nb, color)
+
            
     def get_empty_points(self) -> np.ndarray:
         """
