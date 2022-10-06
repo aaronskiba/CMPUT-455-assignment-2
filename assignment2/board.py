@@ -238,7 +238,7 @@ class GoBoard(object):
         Returns whether move was legal
         """
         self.board[point] = color
-        self.current_player = opponent(color)
+        #self.current_player = opponent(color)
 
 
     def neighbors_of_color(self, point: GO_POINT, color: GO_COLOR) -> List:
