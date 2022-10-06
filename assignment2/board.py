@@ -87,9 +87,43 @@ class GoBoard(object):
         This method tries to play the move on a temporary copy of the board.
         This prevents the board from being modified by the move
         """
-        board_copy: GoBoard = self.copy()
-        can_play_move = board_copy.play_move(point, color)
-        return can_play_move
+
+        # board_copy: GoBoard = self.copy()
+        # can_play_move = board_copy.play_move(point, color)
+        # return can_play_move
+
+        assert is_black_white(color)
+        
+        if self.board[point] != EMPTY:
+            return False
+            
+
+        opp_color = opponent(color)
+        # in_enemy_eye = self._is_surrounded(point, opp_color)
+        self.board[point] = color
+        neighbors = self._neighbors(point)
+        
+        #check for capturing
+        for nb in neighbors:
+            if self.board[nb] == opp_color:
+                captured = self._detect_and_process_capture(nb)
+                if captured:
+                #undo capturing move
+                    self.board[point] = EMPTY
+                    return False
+                    
+                    
+        #check for suicide
+        block = self._block_of(point)
+        if not self._has_liberty(block):  
+            # undo suicide move
+            self.board[point] = EMPTY
+            return False
+        
+        # undo legal move
+        self.board[point] = EMPTY
+        # self.current_player = opponent(color)
+        return True
 
         
            
@@ -203,36 +237,9 @@ class GoBoard(object):
         Play a move of color on point
         Returns whether move was legal
         """
-        
-        assert is_black_white(color)
-        
-        if self.board[point] != EMPTY:
-            return False
-            
-        opp_color = opponent(color)
-        in_enemy_eye = self._is_surrounded(point, opp_color)
         self.board[point] = color
-        neighbors = self._neighbors(point)
-        
-        #check for capturing
-        for nb in neighbors:
-            if self.board[nb] == opp_color:
-                captured = self._detect_and_process_capture(nb)
-                if captured:
-                #undo capturing move
-                    self.board[point] = EMPTY
-                    return False
-                    
-                    
-        #check for suicide
-        block = self._block_of(point)
-        if not self._has_liberty(block):  
-            # undo suicide move
-            self.board[point] = EMPTY
-            return False
-        
         self.current_player = opponent(color)
-        return True
+
 
     def neighbors_of_color(self, point: GO_POINT, color: GO_COLOR) -> List:
         """ List of neighbors of point of given color """

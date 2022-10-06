@@ -333,11 +333,11 @@ class GtpConnection:
                 )
                 return
             
-            success = self.board.play_move(move, color)
-            if not success:
+            if not self.board.is_legal(move, color):
                 self.respond('illegal move')
                 return
             else:
+                self.board.play_move(move, color)
                 self.debug_msg(
                     "Move: {}\nBoard:\n{}\n".format(board_move, self.board2d())
                 )
