@@ -31,8 +31,7 @@ from board_util import GoBoardUtil
 from engine import GoEngine
 
 class GtpConnection:
-    def __init__(self, go_engine: GoEngine, board: GoBoard, debug_mode: bool = False, \
-        start_time: float = 0.0, time_limit: int = 1, is_time_out: bool = False) -> None:
+    def __init__(self, go_engine: GoEngine, board: GoBoard, debug_mode: bool = False) -> None:
         """
         Manage a GTP connection for a Go-playing engine
 
@@ -43,9 +42,6 @@ class GtpConnection:
         board:
             Represents the current board state.
         """
-        self.start_time = start_time
-        self.time_limit = time_limit
-        self.is_time_out = is_time_out
         self._debug_mode: bool = debug_mode
         self.go_engine = go_engine
         self.board: GoBoard = board
@@ -65,8 +61,7 @@ class GtpConnection:
             "legal_moves": self.legal_moves_cmd,
             "gogui-rules_legal_moves": self.gogui_rules_legal_moves_cmd,
             "gogui-rules_final_result": self.gogui_rules_final_result_cmd,
-            "solve": self.solve_cmd,
-            "timelimit": self.set_time_limit,
+            "solve": self.solve_cmd
         }
 
         # argmap is used for argument checking
@@ -338,12 +333,12 @@ class GtpConnection:
                 )
                 return
             
-            success = self.board.is_legal(move, color)
-            if not success:
+            if not self.board.is_legal(move, color):
                 self.respond('illegal move')
                 return
             else:
                 self.board.play_move(move, color)
+                self.board.current_player = opponent(color)
                 self.debug_msg(
                     "Move: {}\nBoard:\n{}\n".format(board_move, self.board2d())
                 )
@@ -371,51 +366,55 @@ class GtpConnection:
         move_as_string = format_point(move_coord)
         if self.board.is_legal(move, color):
             self.board.play_move(move, color)
+            self.board.current_player = opponent(color)
             self.respond(move_as_string)
         else:
             self.respond("Illegal move: {}".format(move_as_string))
 
-
-    def is_timeout(self) -> bool:
-        return bool((time.process_time() - self.start_time) > self.time_limit)
-
-    def set_start_time(self):
-        self.start_time = time.process_time()
-
-    def set_is_time_out(self) -> bool:
-        """
-        Returns a boolean corresponding to whether the elapsed time has exceeded the time limit
-        """
-        self.is_time_out = bool(time.process_time() - self.start_time > self.time_limit)
-
-    def get_outcome(self, board, color) -> dict:
+    
+    def get_outcome(self, color) -> dict:
         """
         Attempts to solve a go board
-        @return: a dict {"winning_color": color (or opponent(color)), "winning_move": a winning move (or None))}
+        @return: a winning move for the board state, if one exists for the current color; else None
         @params:
         board - the current state of the board
         color - corresponds to the player who's turn it is
         """
-        # if (time.process_time() - self.start_time) > self.current_time_limit:
-        #     self.is_time_out = True
-        #     return
-        # get a list of legal moves corresponding to the current state of the board and color to play
-        legal_moves = GoBoardUtil.generate_legal_moves(board, color)
-        if not legal_moves: # TODO: add or check self.is_timeout() {these two have different implications}
-            return {"winning_color": opponent(color), "winning_move": None } # TODO: handle self.is_timeout()
+        legal_moves = GoBoardUtil.generate_legal_moves(self.board, color)
+        #opponent_legal_moves = GoBoardUtil.prioritize_legal_moves(self.board, legal_moves, color)
+        winning_moves = []
         for move in legal_moves:
-            # play the move on a copy of the board
-            board_copy: GoBoard = GoBoard.copy(board)
-            board_copy.play_move(move, color) # changed "point" to "move"
-            # solve the board state for the opponent
-            outcome = self.get_outcome(board_copy, opponent(color))
-            # if the player's move was a winning move for them
-            #if not self.is_time_out and outcome["winning_color"] == color:
-            if outcome["winning_color"] == color:
-                # return their color and the winning move
-                return {"winning_color": color, "winning_move": move }   
-        # for loop is exited. Thus, there are no winning moves fo the player
-        return {"winning_color": opponent(color), "winning_move": None }
+            self.board.play_move(move, color)
+
+            winning_color = self.board.get_transposition_table_value()
+
+            # if move results in win or loss
+            if winning_color != None:
+                self.board.undo_move(move)
+                if winning_color == color:
+                    winning_moves.append(move)
+                    self.board.set_transposition_table(color)
+                    #return move
+                # else move was win for opponent(color)
+                continue
+
+            # else outcome not in transposition_table
+            self.get_outcome(opponent(color))
+
+            # if move was a winning move for current player
+            if self.board.get_transposition_table_value() == color:
+                winning_moves.append(move)
+                self.board.undo_move(move)
+                # set board state as a win for the current player
+                self.board.set_transposition_table(color)
+                #return move
+
+            self.board.undo_move(move)
+        # if no legal_moves are all legal_moves are losing
+        if winning_moves:
+            return winning_moves
+        self.board.set_transposition_table(opponent(color))
+            
             
     def solve_cmd(self, args: List[str]) -> None:
         """
@@ -428,40 +427,18 @@ class GtpConnection:
         - If winner ("b" or "w") is the current player, then move should include a winning move.
         - If the winner {"b" or "w"} is not the current player, then no move should be included. 
         """
-        # board_color = args[0].lower()
-        # color = color_to_int(board_color)
-        color = self.board.current_player
-        total_time = 0
-        num = 100
-        for i in range(num):
-            self.set_start_time()
-            outcome = self.get_outcome(self.board, color)
-            total_time += time.process_time() - self.start_time
-
-        print("Avg time : {:.4f}".format(total_time/num))
-
-
-        if self.is_time_out:
-            self.respond("[unknown]")
-        
-        else:
-            # get first letter of string representation color
-            color_as_string = int_to_color(outcome["winning_color"])[0]
-
-            if outcome["winning_color"] == color:
-                move = outcome["winning_move"]
+        winning_moves = self.get_outcome(self.board.current_player)
+        winner = self.board.get_transposition_table_value()
+        if winner == self.board.current_player:
+            for i in range(len(winning_moves)):
+                move = winning_moves[i]
                 move_coord = point_to_coord(move, self.board.size)
                 move_as_string = format_point(move_coord)
-
-                self.respond("[" + color_as_string + " " + move_as_string + "]")
-            else:
-                self.respond("[" + color_as_string + "]")
-
-        self.is_time_out = False      
-
-    def set_time_limit(self, args: List[str]) -> None:
-        self.time_limit = int(args[0])
-        self.respond()
+                winning_moves[i] = move_as_string
+            self.respond("[" + int_to_color(winner)[0] + " " + str(winning_moves) + "]")
+            #    total_time += time.process_time() - self.start_time
+        else:
+            print(int_to_color(winner)[0])
 
     """
     ==========================================================================
@@ -507,6 +484,7 @@ def color_to_int(c: str) -> int:
     """convert character to the appropriate integer code"""
     color_to_int = {"b": BLACK, "w": WHITE, "e": EMPTY, "BORDER": BORDER}
     return color_to_int[c]
+
 
 def int_to_color(i: int) -> str:
     """convert integer code to the appropriate color"""
