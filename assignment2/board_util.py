@@ -30,8 +30,29 @@ class GoBoardUtil(object):
             if board.is_legal(move, color):
                 legal_moves.append(move)
         return legal_moves
-        
-        
+
+
+    @staticmethod
+    def prioritize_legal_moves(board: GoBoard, legal_moves: List, color: GO_COLOR) -> List:
+        """
+        returns the same moves sorted from best moves to worst
+
+        Arguments
+        ---------
+        board:
+            a GoBoard
+        color:
+            the color to generate the move for.
+        """
+        prioritized_moves = []
+        for move in legal_moves:
+            # if move would entail placing a stone in player's own eye
+            if not board.is_eye(move, color):
+                prioritized_moves.insert(0,move)
+            else:
+                prioritized_moves.append(move)        
+        return prioritized_moves
+
 
     @staticmethod
     def generate_random_move(board: GoBoard, color: GO_COLOR, 
