@@ -105,6 +105,44 @@ class GoBoard(object):
     def pt(self, row: int, col: int) -> GO_POINT:
         return coord_to_point(row, col, self.size)
 
+    def is_legal_original(self, point: GO_POINT, color: GO_COLOR) -> bool:
+        """
+        Play a move of color on point
+        Returns whether move was legal
+        """
+        
+        assert is_black_white(color)
+        
+        if self.board[point] != EMPTY:
+            return False
+            
+        opp_color = opponent(color)
+        in_enemy_eye = self._is_surrounded(point, opp_color)
+        self.board[point] = color
+        neighbors = self._neighbors(point)
+        
+        #check for capturing
+        for nb in neighbors:
+            if self.board[nb] == opp_color:
+                captured = self._detect_and_process_capture(nb)
+                if captured:
+                #undo capturing move
+                    self.board[point] = EMPTY
+                    return False
+                    
+                    
+        #check for suicide
+        block = self._block_of(point)
+        if not self._has_liberty(block):  
+            # undo suicide move
+            self.board[point] = EMPTY
+            return False
+        
+        #self.current_player = opponent(color)
+        # undo legal move
+        self.board[point] = EMPTY
+        return True
+
 
     def is_legal(self, point: GO_POINT, color: GO_COLOR) -> bool:
         """
