@@ -105,6 +105,7 @@ class GoBoard(object):
     def pt(self, row: int, col: int) -> GO_POINT:
         return coord_to_point(row, col, self.size)
 
+
     def is_legal_original(self, point: GO_POINT, color: GO_COLOR) -> bool:
         """
         Play a move of color on point
@@ -150,10 +151,8 @@ class GoBoard(object):
         This method tries to play the move on a temporary copy of the board.
         This prevents the board from being modified by the move
         """
-        
-        def restore_defaults():
-            self.board[point] = EMPTY
-            self.LIBERTY_FOUND = False
+
+        assert(not self.LIBERTY_FOUND)
 
         # if point is occupied
         if self.board[point] != EMPTY:
@@ -164,21 +163,22 @@ class GoBoard(object):
         # search for suicide
         self.depth_first_liberty_search([], point, color)
         if not self.LIBERTY_FOUND:
-            restore_defaults()
+            self.board[point] = EMPTY
             return False
 
+        self.LIBERTY_FOUND = False # reset to False
         # search for capture
-        self.LIBERTY_FOUND = False
         for nb in self._neighbors(point):
             if self.get_color(nb) != opponent(color):
                 continue
             self.depth_first_liberty_search([], nb, opponent(color))
             if not self.LIBERTY_FOUND: # if any opponent nb has no liberties
-                restore_defaults()
+                self.board[point] = EMPTY
                 return False
 
         # else move is legal
-        restore_defaults()
+        self.LIBERTY_FOUND = False
+        self.board[point] = EMPTY
         return True
         
 
