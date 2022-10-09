@@ -27,7 +27,8 @@ class GoBoardUtil(object):
         legal_moves: List[GO_POINT] = []
         
         for move in moves:
-            if board.is_legal_original(move, color):
+            #if board.is_legal_original(move, color):
+            if board.is_legal(move, color):
                 legal_moves.append(move)
         return legal_moves
 

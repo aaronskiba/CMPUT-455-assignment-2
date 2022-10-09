@@ -118,14 +118,15 @@ class GoBoard(object):
             return False
             
         opp_color = opponent(color)
-        in_enemy_eye = self._is_surrounded(point, opp_color)
+        in_enemy_eye = self._is_surrounded(point, opp_color) # True if all surrounding stones are either BORDER or opponent(color)
         self.board[point] = color
         neighbors = self._neighbors(point)
         
         #check for capturing
         for nb in neighbors:
+            # only check neighboring stones of opponent(color)
             if self.board[nb] == opp_color:
-                captured = self._detect_and_process_capture(nb)
+                captured = self._detect_and_process_capture(nb) # True if opponent(color) block has zero liberties
                 if captured:
                 #undo capturing move
                     self.board[point] = EMPTY
@@ -160,21 +161,49 @@ class GoBoard(object):
 
         self.board[point] = color
 
-        # search for suicide
-        self.depth_first_liberty_search([], point, color)
-        if not self.LIBERTY_FOUND:
-            self.board[point] = EMPTY
-            return False
+        neighbors = self._neighbors(point)
 
-        self.LIBERTY_FOUND = False # reset to False
-        # search for capture
-        for nb in self._neighbors(point):
-            if self.get_color(nb) != opponent(color):
-                continue
-            self.depth_first_liberty_search([], nb, opponent(color))
-            if not self.LIBERTY_FOUND: # if any opponent nb has no liberties
+        empty_neighbors = []
+        same_neighbors = []
+        enemy_neighbors = []
+
+        for nb in neighbors:
+            if self.get_color(nb) == color:
+                same_neighbors.append(nb)
+            elif self.get_color(nb) == opponent(color):
+                enemy_neighbors.append(nb)
+            elif self.get_color(nb) == EMPTY:
+                empty_neighbors.append(nb)
+
+        # if stone has zero liberties
+        if not empty_neighbors:
+            # if stone is surrounded by opponent stones
+            if not same_neighbors:
+                # move is either suicide or capture (false eye)
                 self.board[point] = EMPTY
                 return False
+
+            # else point is surrounded and has at least one neighbor that is own color
+            # determine if block for own color has any liberties
+            self.depth_first_liberty_search([], point, color)
+
+            # if no liberties
+            if not self.LIBERTY_FOUND:
+                self.board[point] = EMPTY
+                return False
+            # else a liberty was found
+            self.LIBERTY_FOUND = False # reset for capture checking
+
+        if enemy_neighbors:
+            # Check each neighboring opponent stone for capture
+            for nb in enemy_neighbors: # TODO: couldn't we have an appended list here as well for visited?
+                # see if block associated with neighboring enemy stone still has any liberties. 
+                self.depth_first_liberty_search([], nb, opponent(color))
+                if not self.LIBERTY_FOUND:
+                    self.board[point] = EMPTY
+                    return False
+                # else a liberty was found
+                self.LIBERTY_FOUND = False
 
         # else move is legal
         self.LIBERTY_FOUND = False
@@ -184,17 +213,19 @@ class GoBoard(object):
 
     def depth_first_liberty_search(self, visited: list, stone, color) -> bool:
         """
-        Check for at least one liberty
+        Search stone and its associated block for at least one liberty using dfs.
+        @return: True if at least one liberty exists, else False.
         """
         if self.LIBERTY_FOUND: # end dfs
             return
-        if stone not in visited: # ignore visited stones
+
+        if stone not in visited:
             visited.append(stone)
             for nb in self._neighbors(stone):
                 if self.get_color(nb) == EMPTY:
                     self.LIBERTY_FOUND = True # our liberty is found
                     return
-                if self.get_color(nb) == color: # nb is part of block
+                if self.get_color(nb) == color: # if nb is part of block
                     self.depth_first_liberty_search(visited, nb, color)
 
            
