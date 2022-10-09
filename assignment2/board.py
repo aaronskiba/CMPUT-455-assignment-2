@@ -31,6 +31,7 @@ from board_base import (
     GO_COLOR,
     GO_POINT,
 )
+from board_util import GoBoardUtil
 
 
 """
@@ -69,20 +70,44 @@ class GoBoard(object):
         return self.tt.get(self.board_to_key())
 
 
-    def board_to_key(self):
+    def get_board_value(self):
         # do math to board state such that the board state becomes a dict key
+        return
+
+
+    def board_to_max_key(self):
+        
+        #TODO: get_twoD_board already flips the board
+        twoD_board = GoBoardUtil.get_twoD_board(self.board)
+        flipped_twoD_board = np.flipud(twoD_board)
+
+        v1 = self.get_board_value(twoD_board)
+        v2 = self.get_board_value(flipped_twoD_board)
+        max = max(v1,v2)
+
+        for board in [twoD_board,flipped_twoD_board]:
+            for _ in range(3): # only three unique rotations possible
+                board = np.rot90(board)
+            v = self.get_board_value(board)
+            max = np.max(max,v)
+        return max
+            
+
+    def board_to_key(self):
         arr = where1d(self.board != BORDER)
         for i in range(len(arr)):
             arr[i] = self.get_color(arr[i])
+
         return int(''.join(str(i) for i in arr))
+
 
     def reset(self, size: int) -> None:
         """
         Creates a start state, an empty board with given size.
         """
         self.size: int = size
-        self.NS: int = size + 1
-        self.WE: int = 1
+        self.NS: int = size + 1 # index for a board point above/below a current point (e.g. size=3, point=5 is directly above point=1 (1+3+1=5))
+        self.WE: int = 1 # index for points to immediate left/right
         self.current_player: GO_COLOR = BLACK
         self.maxpoint: int = board_array_size(size)
         self.board: np.ndarray[GO_POINT] = np.full(self.maxpoint, BORDER, dtype=GO_POINT)

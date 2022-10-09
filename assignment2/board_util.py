@@ -111,7 +111,9 @@ class GoBoardUtil(object):
         size: int = go_board.size
         board2d: np.ndarray[GO_POINT] = np.zeros((size, size), dtype=GO_POINT)
         for row in range(size):
+            # get start square for this row
             start: int = go_board.row_start(row + 1)
+            # set row elements of board2d as all specified elements in go_board.board
             board2d[row, :] = go_board.board[start : start + size]
         board2d = np.flipud(board2d)
         return board2d
