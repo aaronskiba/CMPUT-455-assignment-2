@@ -379,7 +379,7 @@ class GtpConnection:
         """
         legal_moves = GoBoardUtil.generate_legal_moves(self.board, color)
         #opponent_legal_moves = GoBoardUtil.prioritize_legal_moves(self.board, legal_moves, color)
-        
+        winning_moves = []
         for move in legal_moves:
             self.board.play_move(move, color)
 
@@ -389,8 +389,9 @@ class GtpConnection:
             if winning_color != None:
                 self.board.undo_move(move)
                 if winning_color == color:
+                    winning_moves.append(move)
                     self.board.set_transposition_table(color)
-                    return move
+                    #return move
                 # else move was win for opponent(color)
                 continue
 
@@ -399,13 +400,16 @@ class GtpConnection:
 
             # if move was a winning move for current player
             if self.board.get_transposition_table_value() == color:
+                winning_moves.append(move)
                 self.board.undo_move(move)
                 # set board state as a win for the current player
                 self.board.set_transposition_table(color)
-                return move
+                #return move
 
             self.board.undo_move(move)
         # if no legal_moves are all legal_moves are losing
+        if winning_moves:
+            return winning_moves
         self.board.set_transposition_table(opponent(color))
             
             
@@ -420,12 +424,15 @@ class GtpConnection:
         - If winner ("b" or "w") is the current player, then move should include a winning move.
         - If the winner {"b" or "w"} is not the current player, then no move should be included. 
         """
-        move = self.get_outcome(self.board.current_player)
+        winning_moves = self.get_outcome(self.board.current_player)
         winner = self.board.get_transposition_table_value()
         if winner == self.board.current_player:
-            move_coord = point_to_coord(move, self.board.size)
-            move_as_string = format_point(move_coord)
-            self.respond("[" + int_to_color(winner)[0] + " " + move_as_string + "]")
+            for i in range(len(winning_moves)):
+                move = winning_moves[i]
+                move_coord = point_to_coord(move, self.board.size)
+                move_as_string = format_point(move_coord)
+                winning_moves[i] = move_as_string
+            self.respond("[" + int_to_color(winner)[0] + " " + str(winning_moves) + "]")
             #    total_time += time.process_time() - self.start_time
         else:
             print(int_to_color(winner)[0])
