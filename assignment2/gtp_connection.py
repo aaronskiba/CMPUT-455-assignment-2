@@ -31,7 +31,7 @@ from board_util import GoBoardUtil
 from engine import GoEngine
 
 class GtpConnection:
-    def __init__(self, go_engine: GoEngine, board: GoBoard, debug_mode: bool = False, outcome: dict = {"winning_color" : None, "winning_move": None}) -> None:
+    def __init__(self, go_engine: GoEngine, board: GoBoard, debug_mode: bool = False) -> None:
         """
         Manage a GTP connection for a Go-playing engine
 
@@ -42,7 +42,6 @@ class GtpConnection:
         board:
             Represents the current board state.
         """
-        self.outcome: dict = outcome
         self._debug_mode: bool = debug_mode
         self.go_engine = go_engine
         self.board: GoBoard = board
@@ -370,45 +369,44 @@ class GtpConnection:
             self.respond("Illegal move: {}".format(move_as_string))
 
     
-    def get_outcome(self, board, color, legal_moves) -> dict:
+    def get_outcome(self, color) -> dict:
         """
         Attempts to solve a go board
-        @return: a dict {"winning_color": color (or opponent(color)), "winning_move": a winning move (or None))}
+        @return: a winning move for the board state, if one exists for the current color; else None
         @params:
         board - the current state of the board
         color - corresponds to the player who's turn it is
         """
-        def print_color_and_available_moves():
-            legal_move_strings = []
-            for move in legal_moves:
-                move_coord = point_to_coord(move, self.board.size)
-                move_as_string = format_point(move_coord)
-                legal_move_strings.append(move_as_string)
-            legal_move_strings.sort()
-            print(int_to_color(color), legal_move_strings)
-
-
-        print_color_and_available_moves()
+        legal_moves = GoBoardUtil.generate_legal_moves(self.board, color)
+        #opponent_legal_moves = GoBoardUtil.prioritize_legal_moves(self.board, legal_moves, color)
         
         for move in legal_moves:
-            move_coord = point_to_coord(move, self.board.size)
-            move_as_string = format_point(move_coord)
-            print(int_to_color(color), move_as_string)
-            # play the move on a copy of the board
-            board_copy: GoBoard = GoBoard.copy(board)
-            board_copy.play_move(move, color)
-            # get opponent's legal responses
-            opponent_legal_moves = GoBoardUtil.generate_legal_moves(board_copy, opponent(color))
-            # else get the opponent's possible responses
-            self.get_outcome(board_copy, opponent(color), opponent_legal_moves)
-            # if this move results in a win for this color
-            if self.outcome["winning_color"] == color:
-                self.outcome["winning_move"] = move
-                return
-            # else check next move in legal_moves
+            self.board.play_move(move, color)
 
-        # if no winning move in legal_moves
-        self.outcome["winning_color"] = opponent(color)
+            winning_color = self.board.get_transposition_table_value()
+
+            # if move results in win or loss
+            if winning_color != None:
+                self.board.undo_move(move)
+                if winning_color == color:
+                    self.board.set_transposition_table(color)
+                    return move
+                # else move was win for opponent(color)
+                continue
+
+            # else outcome not in transposition_table
+            self.get_outcome(opponent(color))
+
+            # if move was a winning move for current player
+            if self.board.get_transposition_table_value() == color:
+                self.board.undo_move(move)
+                # set board state as a win for the current player
+                self.board.set_transposition_table(color)
+                return move
+
+            self.board.undo_move(move)
+        # if no legal_moves are all legal_moves are losing
+        self.board.set_transposition_table(opponent(color))
             
             
     def solve_cmd(self, args: List[str]) -> None:
@@ -422,37 +420,15 @@ class GtpConnection:
         - If winner ("b" or "w") is the current player, then move should include a winning move.
         - If the winner {"b" or "w"} is not the current player, then no move should be included. 
         """
-        # board_color = args[0].lower()
-        # color = color_to_int(board_color)
-        #color = self.board.current_player
-        #total_time = 0
-        #num = 100
-        #for i in range(num):
-        #    self.set_start_time()
-        legal_moves = GoBoardUtil.generate_legal_moves(self.board, self.board.current_player)
-        self.get_outcome(self.board, self.board.current_player, legal_moves)
-        #    total_time += time.process_time() - self.start_time
-
-        #print("Avg time : {:.4f}".format(total_time/num))
-
-
-        if False : #self.is_time_out:
-            self.respond("[unknown]")
-        
+        move = self.get_outcome(self.board.current_player)
+        winner = self.board.get_transposition_table_value()
+        if winner == self.board.current_player:
+            move_coord = point_to_coord(move, self.board.size)
+            move_as_string = format_point(move_coord)
+            self.respond("[" + int_to_color(winner)[0] + " " + move_as_string + "]")
+            #    total_time += time.process_time() - self.start_time
         else:
-            # get first letter of string representation color
-            color_as_string = int_to_color(self.outcome["winning_color"])[0]
-
-            if self.outcome["winning_color"] == self.board.current_player:
-                move = self.outcome["winning_move"]
-                move_coord = point_to_coord(move, self.board.size)
-                move_as_string = format_point(move_coord)
-
-                self.respond("[" + color_as_string + " " + move_as_string + "]")
-            else:
-                self.respond("[" + color_as_string + "]")
-
-        self.is_time_out = False
+            print(int_to_color(winner)[0])
 
     """
     ==========================================================================
