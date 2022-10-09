@@ -46,12 +46,35 @@ class GoBoard(object):
 
     LIBERTY_FOUND = False
 
-    def __init__(self, size: int):
+    def __init__(self, size: int, transposition_table: dict = {}):
         """
         Creates a Go board of given size
         """
         assert 2 <= size <= MAXSIZE
         self.reset(size)
+        self.transposition_table = transposition_table
+
+    def set_transposition_table(self, color):
+        """
+        Adds a transposition_table entry, based on the key and value provided
+        """
+        self.transposition_table[self.board_to_key()] = color
+
+
+    def get_transposition_table_value(self):
+        """
+        If stored in the transposition table, return the outcome (1 or 2) for the current board state, else return None.
+        """
+
+        return self.transposition_table.get(self.board_to_key())
+
+
+    def board_to_key(self):
+        # do math to board state such that the board state becomes a dict key
+        arr = where1d(self.board != BORDER)
+        for i in range(len(arr)):
+            arr[i] = self.get_color(arr[i])
+        return int(''.join(str(i) for i in arr))
 
     def reset(self, size: int) -> None:
         """
@@ -94,7 +117,7 @@ class GoBoard(object):
             self.board[point] = EMPTY
             self.LIBERTY_FOUND = False
 
-        #if point is occupied
+        # if point is occupied
         if self.board[point] != EMPTY:
             return False
 
@@ -102,19 +125,17 @@ class GoBoard(object):
 
         # search for suicide
         self.depth_first_liberty_search([], point, color)
-        print("suicide")
         if not self.LIBERTY_FOUND:
             restore_defaults()
             return False
 
-        self.LIBERTY_FOUND = False
         # search for capture
+        self.LIBERTY_FOUND = False
         for nb in self._neighbors(point):
             if self.get_color(nb) != opponent(color):
                 continue
             self.depth_first_liberty_search([], nb, opponent(color))
             if not self.LIBERTY_FOUND: # if any opponent nb has no liberties
-                print("capture")
                 restore_defaults()
                 return False
 
@@ -162,6 +183,7 @@ class GoBoard(object):
         for row in range(1, self.size + 1):
             start: int = self.row_start(row)
             board_array[start : start + self.size] = EMPTY
+
 
     def is_eye(self, point: GO_POINT, color: GO_COLOR) -> bool:
         """
@@ -244,7 +266,11 @@ class GoBoard(object):
         return not self._has_liberty(opp_block)
 
 
-    def play_move(self, point: GO_POINT, color: GO_COLOR) -> bool:
+    def undo_move(self, point: GO_POINT):
+        self.board[point] = EMPTY
+
+
+    def play_move(self, point: GO_POINT, color: GO_COLOR):
         """
         Play a move of color on point
         Returns whether move was legal
@@ -260,6 +286,7 @@ class GoBoard(object):
             if self.get_color(nb) == color:
                 nbc.append(nb)
         return nbc
+
 
     def _neighbors(self, point: GO_POINT) -> List:
         """ List of all four neighbors of the point """
