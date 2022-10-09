@@ -46,27 +46,27 @@ class GoBoard(object):
 
     LIBERTY_FOUND = False
 
-    def __init__(self, size: int, transposition_table: dict = {}):
+    def __init__(self, size: int, tt: dict = {}):
         """
         Creates a Go board of given size
         """
         # assert 2 <= size <= MAXSIZE
         self.reset(size)
-        self.transposition_table = transposition_table
+        self.tt = tt
 
-    def set_transposition_table(self, color):
+    def set_tt_entry(self, color):
         """
-        Adds a transposition_table entry, based on the key and value provided
+        Adds a transposition table entry, based on the key and value provided
         """
-        self.transposition_table[self.board_to_key()] = color
+        self.tt[self.board_to_key()] = color
 
 
-    def get_transposition_table_value(self):
+    def get_tt_entry(self):
         """
         If stored in the transposition table, return the outcome (1 or 2) for the current board state, else return None.
         """
 
-        return self.transposition_table.get(self.board_to_key())
+        return self.tt.get(self.board_to_key())
 
 
     def board_to_key(self):

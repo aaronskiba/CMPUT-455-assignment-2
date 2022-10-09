@@ -386,34 +386,34 @@ class GtpConnection:
         for move in legal_moves:
             self.board.play_move(move, color)
 
-            winning_color = self.board.get_transposition_table_value()
+            winning_color = self.board.get_tt_entry()
 
             # if move results in win or loss
             if winning_color != None:
                 self.board.undo_move(move)
                 if winning_color == color:
                     winning_moves.append(move)
-                    self.board.set_transposition_table(color)
+                    self.board.set_tt_entry(color)
                     #return move
                 # else move was win for opponent(color)
                 continue
 
-            # else outcome not in transposition_table
+            # else outcome not in tt
             self.get_outcome(opponent(color))
 
             # if move was a winning move for current player
-            if self.board.get_transposition_table_value() == color:
+            if self.board.get_tt_entry() == color:
                 winning_moves.append(move)
                 self.board.undo_move(move)
                 # set board state as a win for the current player
-                self.board.set_transposition_table(color)
+                self.board.set_tt_entry(color)
                 #return move
 
             self.board.undo_move(move)
         # if no legal_moves are all legal_moves are losing
         if winning_moves:
             return winning_moves
-        self.board.set_transposition_table(opponent(color))
+        self.board.set_tt_entry(opponent(color))
             
             
     def solve_cmd(self, args: List[str]) -> None:
@@ -428,7 +428,7 @@ class GtpConnection:
         - If the winner {"b" or "w"} is not the current player, then no move should be included. 
         """
         winning_moves = self.get_outcome(self.board.current_player)
-        winner = self.board.get_transposition_table_value()
+        winner = self.board.get_tt_entry()
         if winner == self.board.current_player:
             for i in range(len(winning_moves)):
                 move = winning_moves[i]
