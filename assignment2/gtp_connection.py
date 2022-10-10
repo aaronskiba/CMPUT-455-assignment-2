@@ -332,8 +332,7 @@ class GtpConnection:
                     "Error executing move {} converted from {}".format(move, args[1])
                 )
                 return
-            
-            if not self.board.is_legal(move, color):
+            if not self.board.is_empty(move) or not self.board.is_legal(move, color):
                 self.respond('illegal move')
                 return
             else:
@@ -443,7 +442,6 @@ class GtpConnection:
             # else outcome not in tt
             self.get_outcome(opponent(color))
 
-
             if self.board.get_tt_entry() == color: # this tt_entry now exists
                 self.board.undo_move(move)
                 # set board state as a win for the current player
@@ -466,18 +464,18 @@ class GtpConnection:
         - If winner ("b" or "w") is the current player, then move should include a winning move.
         - If the winner {"b" or "w"} is not the current player, then no move should be included. 
         """
-        winning_moves = self.get_outcome(self.board.current_player)
+        move = self.get_outcome(self.board.current_player)
         winner = self.board.get_tt_entry()
         if winner == self.board.current_player:
-            for i in range(len(winning_moves)):
-                move = winning_moves[i]
-                move_coord = point_to_coord(move, self.board.size)
-                move_as_string = format_point(move_coord)
-                winning_moves[i] = move_as_string
-            self.respond("[" + int_to_color(winner)[0] + " " + str(winning_moves) + "]")
+            # for i in range(len(winning_moves)):
+            #     move = winning_moves[i]
+            move_coord = point_to_coord(move, self.board.size)
+            move_as_string = format_point(move_coord)
+            #     winning_moves[i] = move_as_string
+            self.respond("[" + int_to_color(winner)[0] + " " + move_as_string + "]")
             #    total_time += time.process_time() - self.start_time
         else:
-            print(int_to_color(winner)[0])
+            self.respond("[" + int_to_color(winner)[0] + "]")
 
     """
     ==========================================================================

@@ -175,8 +175,8 @@ class GoBoard(object):
         assert(not self.LIBERTY_FOUND)
 
         # if point is occupied
-        if self.board[point] != EMPTY:
-            return False
+        # if self.board[point] != EMPTY: # redundant
+        #     return False
 
         self.board[point] = color
 
@@ -254,6 +254,10 @@ class GoBoard(object):
             The empty points on the board
         """
         return where1d(self.board == EMPTY)
+
+    def is_empty(self, point) -> bool:
+        """Return: where or not the specified point is empty"""
+        return self.board[point] == EMPTY
 
     def row_start(self, row: int) -> int:
         # assert row >= 1
