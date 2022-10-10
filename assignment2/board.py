@@ -172,17 +172,17 @@ class GoBoard(object):
 
         self.board[point] = color
 
-        empty_neighbors = []
-        same_neighbors = []
-        opponent_neighbors = []
+        empty_neighbors = set()
+        same_neighbors = set()
+        opponent_neighbors = set()
 
         for nb in self._neighbors(point):
             if self.get_color(nb) == color:
-                same_neighbors.append(nb)
+                same_neighbors.add(nb)
             elif self.get_color(nb) == opponent(color):
-                opponent_neighbors.append(nb)
+                opponent_neighbors.add(nb)
             elif self.get_color(nb) == EMPTY:
-                empty_neighbors.append(nb)
+                empty_neighbors.add(nb)
 
         # if stone has zero liberties
         if not empty_neighbors:
@@ -194,52 +194,74 @@ class GoBoard(object):
 
             # else point is surrounded and has at least one neighbor that is own color
             # determine if block for own color has any liberties
-            visited = []
+            visited = set()
             for nb in same_neighbors:
-                is_liberty, visited = self.depth_first_liberty_search(visited, [], nb, color)
-                # if we have found a liberty for the block
-                if is_liberty:
-                    break # same_neighbors are part of this block and must have a liberty as well
-            # if no liberties
+                if nb not in visited:
+                    is_liberty, visited = self.depth_first_liberty_search_simple(visited, nb, color)
+                    # if we have found a liberty for the block
+                    if is_liberty:
+                        break # same_neighbors are part of same block and thus, they share this liberty
+            # if entire block has no liberties
             if not is_liberty:
                 self.board[point] = EMPTY
                 return False
 
         if opponent_neighbors:
             # Check each neighboring opponent stone for capture
-            liberty_array = []
-            for nb in opponent_neighbors: # opponent neighbors may belong to different blocks
+            liberty_set = set()
+            for nb in opponent_neighbors: # opponent neighbors may belong to same or different block(s)
                 # if nb belongs to a block that was already found to have a liberty
-                if nb in liberty_array:
+                if nb in liberty_set:
                     continue
-                # see if block associated with opponent nb stone still has any liberties. 
-                is_liberty, visited = self.depth_first_liberty_search([], liberty_array, nb, opponent(color))
+                # see if block of nb has at least one liberty 
+                is_liberty, visited = self.depth_first_liberty_search(set(), liberty_set, nb, opponent(color))
                 if not is_liberty:
                     self.board[point] = EMPTY
                     return False
                 # else a liberty was found for the block of this neighbor
                 # Hence, all stones in visited belong to a block with at least one liberty
-                liberty_array += visited
+                liberty_set.update(visited)
 
         self.board[point] = EMPTY
         return True
+
+    def depth_first_liberty_search_simple(self, visited: set, stone, color) -> bool:
+        """
+        Search stone and its associated block for at least one liberty using dfs.
+        @return: True if at least one liberty exists, else False.
+        """
+        
+        visited.add(stone)
+        # neighbors = self._neighbors(stone)  #TODO: start by searching for EMPTY?
+        # if EMPTY in neighbors:
+        #     return True, visited
+        for nb in self._neighbors(stone):
+            if nb not in visited: # ignore previously visited stones
+                if self.get_color(nb) == EMPTY:
+                    return True, visited
+                if self.get_color(nb) == color:
+                    # see if this stone has at least one liberty
+                    is_liberty, visited = self.depth_first_liberty_search_simple(visited, nb, color)
+                    if is_liberty:
+                        return True, visited
+        return False, visited
         
 
-    def depth_first_liberty_search(self, visited: list, liberty_array: list, stone, color) -> bool:
+    def depth_first_liberty_search(self, visited: set, liberty_set: set, stone, color) -> bool:
         """
         Search stone and its associated block for at least one liberty using dfs.
         @return: True if at least one liberty exists, else False.
         """
         if stone not in visited:
-            visited.append(stone)
+            visited.add(stone)
             for nb in self._neighbors(stone):
                 if self.get_color(nb) == EMPTY:
                     return True, visited
                 if self.get_color(nb) == color: # if nb is part of block
-                    if nb in liberty_array:
+                    if nb in liberty_set:
                         return True, visited
                     # see if this stone has at least one liberty
-                    is_liberty, visited = self.depth_first_liberty_search(visited, liberty_array, nb, color)
+                    is_liberty, visited = self.depth_first_liberty_search(visited, liberty_set, nb, color)
                     if is_liberty:
                         return True, visited
         return False, visited
