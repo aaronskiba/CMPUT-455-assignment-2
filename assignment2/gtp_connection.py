@@ -370,9 +370,9 @@ class GtpConnection:
             self.respond(move_as_string)
         else:
             self.respond("Illegal move: {}".format(move_as_string))
-
     
-    def get_outcome(self, color) -> dict:
+
+    def get_all_outcomes(self, color) -> dict:
         """
         Attempts to solve a go board
         @return: a winning move for the board state, if one exists for the current color; else None
@@ -381,7 +381,7 @@ class GtpConnection:
         color - corresponds to the player who's turn it is
         """
         legal_moves = GoBoardUtil.generate_legal_moves(self.board, color)
-        #opponent_legal_moves = GoBoardUtil.prioritize_legal_moves(self.board, legal_moves, color)
+        #legal_moves = GoBoardUtil.prioritize_legal_moves(self.board, legal_moves, color)
         winning_moves = []
         for move in legal_moves:
             self.board.play_move(move, color)
@@ -413,6 +413,45 @@ class GtpConnection:
         # if no legal_moves are all legal_moves are losing
         if winning_moves:
             return winning_moves
+        self.board.set_tt_entry(opponent(color))
+
+    
+    def get_outcome(self, color) -> dict:
+        """
+        Attempts to solve a go board
+        @return: a winning move for the board state, if one exists for the current color; else None
+        @params:
+        board - the current state of the board
+        color - corresponds to the player who's turn it is
+        """
+        legal_moves = GoBoardUtil.generate_legal_moves(self.board, color)
+        #legal_moves = GoBoardUtil.prioritize_legal_moves(self.board, legal_moves, color)
+        for move in legal_moves:
+            self.board.play_move(move, color)
+
+            winning_color = self.board.get_tt_entry()
+            # if move results in win or loss
+            if winning_color != None:
+                self.board.undo_move(move)
+                if winning_color == color:
+                    # set color as winner of current board state
+                    self.board.set_tt_entry(color)
+                    return move
+                # else move was win for opponent(color)
+                continue
+
+            # else outcome not in tt
+            self.get_outcome(opponent(color))
+
+
+            if self.board.get_tt_entry() == color: # this tt_entry now exists
+                self.board.undo_move(move)
+                # set board state as a win for the current player
+                self.board.set_tt_entry(color)
+                return move
+
+            self.board.undo_move(move)
+        # if no legal_moves or all legal_moves are losing
         self.board.set_tt_entry(opponent(color))
             
             
