@@ -43,8 +43,6 @@ See GoBoardUtil.coord_to_point for explanations of the array encoding.
 """
 class GoBoard(object):
 
-    LIBERTY_FOUND = False
-
     def __init__(self, size: int, tt: dict = {}):
         """
         Creates a Go board of given size
@@ -125,44 +123,44 @@ class GoBoard(object):
         return coord_to_point(row, col, self.size)
 
 
-    def is_legal_original(self, point: GO_POINT, color: GO_COLOR) -> bool:
-        """
-        Play a move of color on point
-        Returns whether move was legal
-        """
+    # def is_legal_original(self, point: GO_POINT, color: GO_COLOR) -> bool:
+    #     """
+    #     Play a move of color on point
+    #     Returns whether move was legal
+    #     """
         
-        assert is_black_white(color)
+    #     assert is_black_white(color)
         
-        if self.board[point] != EMPTY:
-            return False
+    #     if self.board[point] != EMPTY:
+    #         return False
             
-        opp_color = opponent(color)
-        in_enemy_eye = self._is_surrounded(point, opp_color) # True if all surrounding stones are either BORDER or opponent(color)
-        self.board[point] = color
-        neighbors = self._neighbors(point)
+    #     opp_color = opponent(color)
+    #     in_enemy_eye = self._is_surrounded(point, opp_color) # True if all surrounding stones are either BORDER or opponent(color)
+    #     self.board[point] = color
+    #     neighbors = self._neighbors(point)
         
-        #check for capturing
-        for nb in neighbors:
-            # only check neighboring stones of opponent(color)
-            if self.board[nb] == opp_color:
-                captured = self._detect_and_process_capture(nb) # True if opponent(color) block has zero liberties
-                if captured:
-                #undo capturing move
-                    self.board[point] = EMPTY
-                    return False
+    #     #check for capturing
+    #     for nb in neighbors:
+    #         # only check neighboring stones of opponent(color)
+    #         if self.board[nb] == opp_color:
+    #             captured = self._detect_and_process_capture(nb) # True if opponent(color) block has zero liberties
+    #             if captured:
+    #             #undo capturing move
+    #                 self.board[point] = EMPTY
+    #                 return False
                     
                     
-        #check for suicide
-        block = self._block_of(point)
-        if not self._has_liberty(block):  
-            # undo suicide move
-            self.board[point] = EMPTY
-            return False
+    #     #check for suicide
+    #     block = self._block_of(point)
+    #     if not self._has_liberty(block):  
+    #         # undo suicide move
+    #         self.board[point] = EMPTY
+    #         return False
         
-        #self.current_player = opponent(color)
-        # undo legal move
-        self.board[point] = EMPTY
-        return True
+    #     #self.current_player = opponent(color)
+    #     # undo legal move
+    #     self.board[point] = EMPTY
+    #     return True
 
 
     def is_legal(self, point: GO_POINT, color: GO_COLOR) -> bool:
@@ -172,25 +170,17 @@ class GoBoard(object):
         This prevents the board from being modified by the move
         """
 
-        assert(not self.LIBERTY_FOUND)
-
-        # if point is occupied
-        # if self.board[point] != EMPTY: # redundant
-        #     return False
-
         self.board[point] = color
-
-        neighbors = self._neighbors(point)
 
         empty_neighbors = []
         same_neighbors = []
-        enemy_neighbors = []
+        opponent_neighbors = []
 
-        for nb in neighbors:
+        for nb in self._neighbors(point):
             if self.get_color(nb) == color:
                 same_neighbors.append(nb)
             elif self.get_color(nb) == opponent(color):
-                enemy_neighbors.append(nb)
+                opponent_neighbors.append(nb)
             elif self.get_color(nb) == EMPTY:
                 empty_neighbors.append(nb)
 
@@ -198,54 +188,61 @@ class GoBoard(object):
         if not empty_neighbors:
             # if stone is surrounded by opponent stones
             if not same_neighbors:
-                # move is either suicide or capture (false eye)
+                # move is either suicide or capture
                 self.board[point] = EMPTY
                 return False
 
             # else point is surrounded and has at least one neighbor that is own color
             # determine if block for own color has any liberties
-            self.depth_first_liberty_search([], point, color)
-
+            visited = []
+            for nb in same_neighbors:
+                is_liberty, visited = self.depth_first_liberty_search(visited, [], nb, color)
+                # if we have found a liberty for the block
+                if is_liberty:
+                    break # same_neighbors are part of this block and must have a liberty as well
             # if no liberties
-            if not self.LIBERTY_FOUND:
+            if not is_liberty:
                 self.board[point] = EMPTY
                 return False
-            # else a liberty was found
-            self.LIBERTY_FOUND = False # reset for capture checking
 
-        if enemy_neighbors:
+        if opponent_neighbors:
             # Check each neighboring opponent stone for capture
-            for nb in enemy_neighbors: # TODO: couldn't we have an appended list here as well for visited?
-                # see if block associated with neighboring enemy stone still has any liberties. 
-                self.depth_first_liberty_search([], nb, opponent(color))
-                if not self.LIBERTY_FOUND:
+            liberty_array = []
+            for nb in opponent_neighbors: # opponent neighbors may belong to different blocks
+                # if nb belongs to a block that was already found to have a liberty
+                if nb in liberty_array:
+                    continue
+                # see if block associated with opponent nb stone still has any liberties. 
+                is_liberty, visited = self.depth_first_liberty_search([], liberty_array, nb, opponent(color))
+                if not is_liberty:
                     self.board[point] = EMPTY
                     return False
-                # else a liberty was found
-                self.LIBERTY_FOUND = False
+                # else a liberty was found for the block of this neighbor
+                # Hence, all stones in visited belong to a block with at least one liberty
+                liberty_array += visited
 
-        # else move is legal
-        self.LIBERTY_FOUND = False
         self.board[point] = EMPTY
         return True
         
 
-    def depth_first_liberty_search(self, visited: list, stone, color) -> bool:
+    def depth_first_liberty_search(self, visited: list, liberty_array: list, stone, color) -> bool:
         """
         Search stone and its associated block for at least one liberty using dfs.
         @return: True if at least one liberty exists, else False.
         """
-        if self.LIBERTY_FOUND: # end dfs
-            return
-
         if stone not in visited:
             visited.append(stone)
             for nb in self._neighbors(stone):
                 if self.get_color(nb) == EMPTY:
-                    self.LIBERTY_FOUND = True # our liberty is found
-                    return
+                    return True, visited
                 if self.get_color(nb) == color: # if nb is part of block
-                    self.depth_first_liberty_search(visited, nb, color)
+                    if nb in liberty_array:
+                        return True, visited
+                    # see if this stone has at least one liberty
+                    is_liberty, visited = self.depth_first_liberty_search(visited, liberty_array, nb, color)
+                    if is_liberty:
+                        return True, visited
+        return False, visited
 
            
     def get_empty_points(self) -> np.ndarray:
@@ -306,6 +303,7 @@ class GoBoard(object):
                 return False
         return True
 
+
     def _has_liberty(self, block: np.ndarray) -> bool:
         """
         Check if the given block has any liberty.
@@ -326,6 +324,7 @@ class GoBoard(object):
         color: GO_COLOR = self.get_color(stone)
         # assert is_black_white(color)
         return self.connected_component(stone)
+
 
     def connected_component(self, point: GO_POINT) -> np.ndarray:
         """

@@ -464,15 +464,16 @@ class GtpConnection:
         - If winner ("b" or "w") is the current player, then move should include a winning move.
         - If the winner {"b" or "w"} is not the current player, then no move should be included. 
         """
-        move = self.get_outcome(self.board.current_player)
+        # move = self.get_outcome(self.board.current_player)
+        winning_moves = self.get_all_outcomes(self.board.current_player)
         winner = self.board.get_tt_entry()
         if winner == self.board.current_player:
-            # for i in range(len(winning_moves)):
-            #     move = winning_moves[i]
-            move_coord = point_to_coord(move, self.board.size)
-            move_as_string = format_point(move_coord)
-            #     winning_moves[i] = move_as_string
-            self.respond("[" + int_to_color(winner)[0] + " " + move_as_string + "]")
+            for i in range(len(winning_moves)):
+                move = winning_moves[i]
+                move_coord = point_to_coord(move, self.board.size)
+                move_as_string = format_point(move_coord)
+                winning_moves[i] = move_as_string
+            self.respond("[" + int_to_color(winner)[0] + " " + str(winning_moves) + "]")
             #    total_time += time.process_time() - self.start_time
         else:
             self.respond("[" + int_to_color(winner)[0] + "]")
