@@ -31,8 +31,6 @@ from board_base import (
     GO_COLOR,
     GO_POINT,
 )
-from board_util import GoBoardUtil
-
 
 """
 The GoBoard class implements a board and basic functions to play
@@ -70,35 +68,41 @@ class GoBoard(object):
         return self.tt.get(self.board_to_key())
 
 
-    def get_board_value(self):
+    def get_board_value(self, board):
         # do math to board state such that the board state becomes a dict key
-        return
+        arr = np.array(board)
+        flat_arr = arr.flatten()
+
+        return int(''.join(str(i) for i in flat_arr))
 
 
-    def board_to_max_key(self):
+    #def board_to_max_key(self):
+    def board_to_key(self):
         
         #TODO: get_twoD_board already flips the board
-        twoD_board = GoBoardUtil.get_twoD_board(self.board)
+        twoD_board = self.get_twoD_board()
         flipped_twoD_board = np.flipud(twoD_board)
 
         v1 = self.get_board_value(twoD_board)
         v2 = self.get_board_value(flipped_twoD_board)
-        max = max(v1,v2)
+        max = np.max([v1,v2])
 
         for board in [twoD_board,flipped_twoD_board]:
             for _ in range(3): # only three unique rotations possible
                 board = np.rot90(board)
             v = self.get_board_value(board)
-            max = np.max(max,v)
+            max = np.max([max,v])
+        print(f"max = {max}")
         return max
             
 
-    def board_to_key(self):
-        arr = where1d(self.board != BORDER)
-        for i in range(len(arr)):
-            arr[i] = self.get_color(arr[i])
+    # def board_to_key(self):
+    #     self.board_to_max_key()
+    #     arr = where1d(self.board != BORDER)
+    #     for i in range(len(arr)):
+    #         arr[i] = self.get_color(arr[i])
 
-        return int(''.join(str(i) for i in arr))
+    #     return int(''.join(str(i) for i in arr))
 
 
     def reset(self, size: int) -> None:
@@ -399,3 +403,23 @@ class GoBoard(object):
         """
         board_moves: List[GO_POINT] = []
         return board_moves
+
+    def get_twoD_board(self) -> np.ndarray:
+        """
+        Return: numpy array
+        a two dimensional numpy array with the goboard.
+        Shows stones and empty points as encoded in board_base.py.
+        Result is not padded with BORDER points.
+        Rows 1..size of goboard are copied into rows 0..size - 1 of board2d
+        Then the board is flipped up-down to be consistent with the
+        coordinate system in GoGui (row 1 at the bottom).
+        """
+        size: int = self.size
+        board2d: np.ndarray[GO_POINT] = np.zeros((size, size), dtype=GO_POINT)
+        for row in range(size):
+            # get start square for this row
+            start: int = self.row_start(row + 1)
+            # set row elements of board2d as all specified elements in go_board.board
+            board2d[row, :] = self.board[start : start + size]
+        board2d = np.flipud(board2d)
+        return board2d
