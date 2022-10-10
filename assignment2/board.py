@@ -57,15 +57,15 @@ class GoBoard(object):
         """
         Adds a transposition table entry, based on the key and value provided
         """
-        self.tt[self.board_to_key()] = color
+        for key in self.board_to_keys():
+            self.tt[key] = color
 
 
     def get_tt_entry(self):
         """
         If stored in the transposition table, return the outcome (1 or 2) for the current board state, else return None.
         """
-
-        return self.tt.get(self.board_to_key())
+        return self.tt.get(self.get_board_value(self.get_twoD_board()))
 
 
     def get_board_value(self, board):
@@ -77,7 +77,7 @@ class GoBoard(object):
 
 
     #def board_to_max_key(self):
-    def board_to_key(self):
+    def board_to_keys(self):
         
         #TODO: get_twoD_board already flips the board
         twoD_board = self.get_twoD_board()
@@ -85,24 +85,14 @@ class GoBoard(object):
 
         v1 = self.get_board_value(twoD_board)
         v2 = self.get_board_value(flipped_twoD_board)
-        max = np.max([v1,v2])
+        keys = [v1,v2]
 
         for board in [twoD_board,flipped_twoD_board]:
             for _ in range(3): # only three unique rotations possible
                 board = np.rot90(board)
             v = self.get_board_value(board)
-            max = np.max([max,v])
-        print(f"max = {max}")
-        return max
-            
-
-    # def board_to_key(self):
-    #     self.board_to_max_key()
-    #     arr = where1d(self.board != BORDER)
-    #     for i in range(len(arr)):
-    #         arr[i] = self.get_color(arr[i])
-
-    #     return int(''.join(str(i) for i in arr))
+            keys.append(v)
+        return keys
 
 
     def reset(self, size: int) -> None:
