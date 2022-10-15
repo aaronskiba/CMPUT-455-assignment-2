@@ -409,8 +409,12 @@ class GtpConnection:
             empty_points_copy.remove(move)
             self.get_all_outcomes(opponent(color), empty_points_copy, start_time)
 
+            winner = self.board.get_tt_entry()
+            if not winner:
+                return
+
             # if move was a winning move for current player
-            if self.board.get_tt_entry() == color:
+            if winner == color:
                 winning_moves.append(move)
                 self.board.undo_move(move)
                 # set board state as a win for the current player
@@ -502,6 +506,7 @@ class GtpConnection:
         Sets the time limit
         """
         self.max_seconds = int(args[0])
+        self.respond()
         return
 
     """
