@@ -363,7 +363,7 @@ class GtpConnection:
             self.respond("Illegal move: {}".format(move_as_string))
     
 
-    def get_all_outcomes(self, color, empty_points) -> dict:
+    def get_all_outcomes(self, color, empty_points: set) -> dict:
         """
         Attempts to solve a go board
         @return: a winning move for the board state, if one exists for the current color; else None
@@ -391,11 +391,10 @@ class GtpConnection:
                 # else move was win for opponent(color)
                 continue
 
-            
             # else outcome not in tt
-            index = np.argwhere(empty_points==move)
-            remaining_empty_points = np.delete(empty_points,index)
-            self.get_all_outcomes(opponent(color), remaining_empty_points)
+            empty_points_copy = empty_points.copy()
+            empty_points_copy.remove(move)
+            self.get_all_outcomes(opponent(color), empty_points_copy)
 
             # if move was a winning move for current player
             if self.board.get_tt_entry() == color:
@@ -462,8 +461,9 @@ class GtpConnection:
         - If the winner {"b" or "w"} is not the current player, then no move should be included. 
         """
         empty_points = self.board.get_empty_points()
+        empty_points_set = set(empty_points)
         # move = self.get_outcome(self.board.current_player)
-        winning_moves = self.get_all_outcomes(self.board.current_player, empty_points)
+        winning_moves = self.get_all_outcomes(self.board.current_player, empty_points_set)
         winner = self.board.get_tt_entry()
         if winner == self.board.current_player:
             for i in range(len(winning_moves)):
