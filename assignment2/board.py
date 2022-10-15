@@ -62,7 +62,6 @@ class GoBoard(object):
         return int(''.join(str(i) for i in flat_arr))
 
 
-    #def board_to_max_key(self):
     def board_to_keys(self):
         
         #TODO: get_twoD_board already flips the board
@@ -92,6 +91,7 @@ class GoBoard(object):
         self.maxpoint: int = board_array_size(size)
         self.board: np.ndarray[GO_POINT] = np.full(self.maxpoint, BORDER, dtype=GO_POINT)
         self._initialize_empty_points(self.board)
+        self.non_border_neighbors: dict = self._initialize_non_border_neighbors_dict()
         
         
     def copy(self) -> 'GoBoard':
@@ -164,7 +164,7 @@ class GoBoard(object):
         same_neighbors = set()
         opponent_neighbors = set()
 
-        for nb in self._neighbors(point):
+        for nb in self.non_border_neighbors[point]:
             if self.get_color(nb) == color:
                 same_neighbors.add(nb)
             elif self.get_color(nb) == opponent(color):
@@ -223,7 +223,7 @@ class GoBoard(object):
         # neighbors = self._neighbors(stone)  #TODO: start by searching for EMPTY?
         # if EMPTY in neighbors:
         #     return True, visited
-        for nb in self._neighbors(stone):
+        for nb in self.non_border_neighbors[stone]:
             if nb not in visited: # ignore previously visited stones
                 if self.get_color(nb) == EMPTY:
                     return True, visited
@@ -242,7 +242,7 @@ class GoBoard(object):
         """
         if stone not in visited:
             visited.add(stone)
-            for nb in self._neighbors(stone):
+            for nb in self.non_border_neighbors[stone]:
                 if self.get_color(nb) == EMPTY:
                     return True, visited
                 if self.get_color(nb) == color: # if nb is part of block
@@ -282,6 +282,25 @@ class GoBoard(object):
         for row in range(1, self.size + 1):
             start: int = self.row_start(row)
             board_array[start : start + self.size] = EMPTY
+
+    def _initialize_non_border_neighbors_dict(self):
+        """
+        Creates and returns a dict whose keys are non-BORDER points
+        and values are a list of non-BORDER neighbors for each point
+        ---------
+        board: numpy array, filled with BORDER
+        """
+        dict = {}
+        for point in range(self.maxpoint):
+            if self.board[point] != EMPTY:
+                continue
+            arr = []
+            neighbors = self._neighbors(point)
+            for nb in neighbors:
+                if self.board[nb] == EMPTY:
+                    arr.append(nb)
+                dict[point] = arr
+        return dict
 
 
     def is_eye(self, point: GO_POINT, color: GO_COLOR) -> bool:
