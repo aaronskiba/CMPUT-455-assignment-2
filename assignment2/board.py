@@ -41,9 +41,11 @@ class GoBoard(object):
 
     def set_tt_entry(self, color):
         """
-        Adds a transposition table entry, based on the key and value provided
+        Adds 8 transposition table entries 
+        (4 rotations for current board state + 4 for current board state's mirror image)
         """
-        for key in self.board_to_keys():
+        keys = self.board_to_keys()
+        for key in keys:
             self.tt[key] = color
 
 
@@ -62,10 +64,20 @@ class GoBoard(object):
         return int(''.join(str(i) for i in flat_arr))
 
 
+    # def board_to_keys(self):
+
+    #     np_arr: np.ndarray[GO_POINT] = np.zeros((self.size*self.size), dtype=GO_POINT) #TODO: precompute the size
+    #     arr = []
+    #     num_string = ""
+    #     for point in self.non_border_points:
+    #         num_string+=self.board[point]
+    #     arr.append(int(num_string))
+
+
     def board_to_keys(self):
         
-        #TODO: get_twoD_board already flips the board
         twoD_board = self.get_twoD_board()
+        print(twoD_board,"I am board")
         flipped_twoD_board = np.flipud(twoD_board)
 
         v1 = self.get_board_value(twoD_board)
@@ -92,6 +104,7 @@ class GoBoard(object):
         self.board: np.ndarray[GO_POINT] = np.full(self.maxpoint, BORDER, dtype=GO_POINT)
         self._initialize_empty_points(self.board)
         self.non_border_neighbors: dict = self._initialize_non_border_neighbors_dict()
+        self.non_border_points: list = list(self.non_border_neighbors.keys())
         
         
     def copy(self) -> 'GoBoard':
@@ -438,12 +451,11 @@ class GoBoard(object):
         Then the board is flipped up-down to be consistent with the
         coordinate system in GoGui (row 1 at the bottom).
         """
-        size: int = self.size
-        board2d: np.ndarray[GO_POINT] = np.zeros((size, size), dtype=GO_POINT)
-        for row in range(size):
+        board2d: np.ndarray[GO_POINT] = np.zeros((self.size, self.size), dtype=GO_POINT)
+        for row in range(self.size):
             # get start square for this row
-            start: int = self.row_start(row + 1)
+            start: int = (row + 1) * self.NS + 1
             # set row elements of board2d as all specified elements in go_board.board
-            board2d[row, :] = self.board[start : start + size]
-        board2d = np.flipud(board2d)
+            board2d[row, :] = self.board[start : start + self.size]
+        #board2d = np.flipud(board2d)
         return board2d

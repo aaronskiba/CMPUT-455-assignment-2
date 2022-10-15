@@ -51,6 +51,7 @@ DEFAULT_SIZE: int = 7
 The number of array elements in a "padded 1D" representation 
 of a size x size board.
 See the documentation under coord_to_point.
+e.g. 3x3 playing area has (3*3 + 3*(3+1) = 9 + 12 = 21 points including the border)
 """
 def board_array_size(size: int) -> int:
     return size * size + 3 * (size + 1)
