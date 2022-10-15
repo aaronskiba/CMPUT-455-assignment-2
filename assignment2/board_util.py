@@ -3,11 +3,13 @@ board_util.py
 Utility functions for Go board.
 """
 
-import numpy as np
 import random
 from typing import List
-from board_base import GO_COLOR, GO_POINT
+
+import numpy as np
 from board import GoBoard
+from board_base import GO_COLOR, GO_POINT
+
 
 class GoBoardUtil(object):
     @staticmethod
