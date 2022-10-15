@@ -12,25 +12,13 @@ Implements a basic Go board with functions to:
 The board uses a 1-dimensional representation with padding
 """
 
-import numpy as np
 from typing import List, Tuple
 
-from board_base import (
-    board_array_size,
-    coord_to_point,
-    is_black_white,
-    is_black_white_empty,
-    opponent,
-    where1d,
-    BLACK,
-    WHITE,
-    EMPTY,
-    BORDER,
-    MAXSIZE,
-    NO_POINT,
-    GO_COLOR,
-    GO_POINT,
-)
+import numpy as np
+from board_base import (BLACK, BORDER, EMPTY, GO_COLOR, GO_POINT, MAXSIZE,
+                        NO_POINT, WHITE, board_array_size, coord_to_point,
+                        is_black_white, is_black_white_empty, opponent,
+                        where1d)
 
 """
 The GoBoard class implements a board and basic functions to play
