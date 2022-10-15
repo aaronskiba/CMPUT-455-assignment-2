@@ -363,7 +363,7 @@ class GtpConnection:
             self.respond("Illegal move: {}".format(move_as_string))
     
 
-    def get_all_outcomes(self, color) -> dict:
+    def get_all_outcomes(self, color, empty_points) -> dict:
         """
         Attempts to solve a go board
         @return: a winning move for the board state, if one exists for the current color; else None
@@ -371,10 +371,12 @@ class GtpConnection:
         board - the current state of the board
         color - corresponds to the player who's turn it is
         """
-        legal_moves = GoBoardUtil.generate_legal_moves(self.board, color)
         #legal_moves = GoBoardUtil.prioritize_legal_moves(self.board, legal_moves, color)
         winning_moves = []
-        for move in legal_moves:
+        for move in empty_points:
+            if not self.board.is_legal(move, color):
+                continue
+            #else play the legal move
             self.board.play_move(move, color)
 
             winning_color = self.board.get_tt_entry()
@@ -389,8 +391,11 @@ class GtpConnection:
                 # else move was win for opponent(color)
                 continue
 
+            
             # else outcome not in tt
-            self.get_outcome(opponent(color))
+            index = np.argwhere(empty_points==move)
+            remaining_empty_points = np.delete(empty_points,index)
+            self.get_all_outcomes(opponent(color), remaining_empty_points)
 
             # if move was a winning move for current player
             if self.board.get_tt_entry() == color:
@@ -407,7 +412,7 @@ class GtpConnection:
         self.board.set_tt_entry(opponent(color))
 
     
-    def get_outcome(self, color) -> dict:
+    def get_outcome(self, color, empty_points) -> dict:
         """
         Attempts to solve a go board
         @return: a winning move for the board state, if one exists for the current color; else None
@@ -456,8 +461,9 @@ class GtpConnection:
         - If winner ("b" or "w") is the current player, then move should include a winning move.
         - If the winner {"b" or "w"} is not the current player, then no move should be included. 
         """
+        empty_points = self.board.get_empty_points()
         # move = self.get_outcome(self.board.current_player)
-        winning_moves = self.get_all_outcomes(self.board.current_player)
+        winning_moves = self.get_all_outcomes(self.board.current_player, empty_points)
         winner = self.board.get_tt_entry()
         if winner == self.board.current_player:
             for i in range(len(winning_moves)):
