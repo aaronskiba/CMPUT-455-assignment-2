@@ -8,27 +8,19 @@ Parts of this code were originally based on the gtp module
 in the Deep-Go project by Isaac Henrion and Amos Storkey
 at the University of Edinburgh.
 """
-import traceback
-import numpy as np
 import re
-from sys import stdin, stdout, stderr
-from typing import Any, Callable, Dict, List, Tuple
 import time
+import traceback
+from sys import stderr, stdin, stdout
+from typing import Any, Callable, Dict, List, Tuple
 
-from board_base import (
-    is_black_white,
-    BLACK,
-    WHITE,
-    EMPTY,
-    BORDER,
-    GO_COLOR, GO_POINT,
-    MAXSIZE,
-    coord_to_point,
-    opponent
-)
+import numpy as np
 from board import GoBoard
+from board_base import (BLACK, BORDER, EMPTY, GO_COLOR, GO_POINT, MAXSIZE,
+                        WHITE, coord_to_point, is_black_white, opponent)
 from board_util import GoBoardUtil
 from engine import GoEngine
+
 
 class GtpConnection:
     def __init__(self, go_engine: GoEngine, board: GoBoard, debug_mode: bool = False) -> None:
