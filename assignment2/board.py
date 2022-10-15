@@ -158,6 +158,8 @@ class GoBoard(object):
         This prevents the board from being modified by the move
         """
 
+        assert is_black_white(color)
+
         self.board[point] = color
 
         empty_neighbors = set()

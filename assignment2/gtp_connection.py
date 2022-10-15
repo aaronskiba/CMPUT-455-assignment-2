@@ -23,7 +23,7 @@ from engine import GoEngine
 
 
 class GtpConnection:
-    def __init__(self, go_engine: GoEngine, board: GoBoard, debug_mode: bool = False) -> None:
+    def __init__(self, go_engine: GoEngine, board: GoBoard, debug_mode: bool = False, max_seconds: int = 0) -> None:
         """
         Manage a GTP connection for a Go-playing engine
 
@@ -37,6 +37,7 @@ class GtpConnection:
         self._debug_mode: bool = debug_mode
         self.go_engine = go_engine
         self.board: GoBoard = board
+        self.max_seconds = max_seconds
         self.commands: Dict[str, Callable[[List[str]], None]] = {
             "protocol_version": self.protocol_version_cmd,
             "quit": self.quit_cmd,
@@ -53,7 +54,8 @@ class GtpConnection:
             "legal_moves": self.legal_moves_cmd,
             "gogui-rules_legal_moves": self.gogui_rules_legal_moves_cmd,
             "gogui-rules_final_result": self.gogui_rules_final_result_cmd,
-            "solve": self.solve_cmd
+            "solve": self.solve_cmd,
+            "timelimit": self.timelimit_cmd
         }
 
         # argmap is used for argument checking
@@ -345,12 +347,22 @@ class GtpConnection:
         If the game is not over yet, call the solve() command.
         If solve() returns False, play a random move     
         """
-        # change this method to use your solver
+        start_time = time.process_time()
         board_color = args[0].lower()
         color = color_to_int(board_color)
+        empty_points = self.board.get_empty_points()
+        empty_points_set = set(empty_points)
+        move = self.get_outcome(color, empty_points_set, start_time)
+        winner = self.board.get_tt_entry()
+        if winner == color:
+            move_coord = point_to_coord(move, self.board.size)
+            move_as_string = format_point(move_coord)
+            self.respond("[" + int_to_color(winner)[0] + " " + move_as_string + "]")
+            return
+        
         move = self.go_engine.get_move(self.board, color)
         if move is None:
-            self.respond('unknown')
+            self.respond('[resign]')
             return
             
         move_coord = point_to_coord(move, self.board.size)
@@ -363,7 +375,7 @@ class GtpConnection:
             self.respond("Illegal move: {}".format(move_as_string))
     
 
-    def get_all_outcomes(self, color, empty_points: set) -> dict:
+    def get_all_outcomes(self, color, empty_points: set, start_time) -> dict:
         """
         Attempts to solve a go board
         @return: a winning move for the board state, if one exists for the current color; else None
@@ -371,12 +383,14 @@ class GtpConnection:
         board - the current state of the board
         color - corresponds to the player who's turn it is
         """
+        print(time.process_time() - start_time)
+        if time.process_time() - start_time > self.max_seconds:
+            return
         #legal_moves = GoBoardUtil.prioritize_legal_moves(self.board, legal_moves, color)
         winning_moves = []
         for move in empty_points:
             if not self.board.is_legal(move, color):
                 continue
-            #else play the legal move
             self.board.play_move(move, color)
 
             winning_color = self.board.get_tt_entry()
@@ -387,14 +401,13 @@ class GtpConnection:
                 if winning_color == color:
                     winning_moves.append(move)
                     self.board.set_tt_entry(color)
-                    #return move
                 # else move was win for opponent(color)
                 continue
 
             # else outcome not in tt
             empty_points_copy = empty_points.copy()
             empty_points_copy.remove(move)
-            self.get_all_outcomes(opponent(color), empty_points_copy)
+            self.get_all_outcomes(opponent(color), empty_points_copy, start_time)
 
             # if move was a winning move for current player
             if self.board.get_tt_entry() == color:
@@ -411,7 +424,7 @@ class GtpConnection:
         self.board.set_tt_entry(opponent(color))
 
     
-    def get_outcome(self, color, empty_points) -> dict:
+    def get_outcome(self, color, empty_points: set, start_time):
         """
         Attempts to solve a go board
         @return: a winning move for the board state, if one exists for the current color; else None
@@ -419,10 +432,11 @@ class GtpConnection:
         board - the current state of the board
         color - corresponds to the player who's turn it is
         """
-        legal_moves = GoBoardUtil.generate_legal_moves(self.board, color)
-        #legal_moves = GoBoardUtil.prioritize_legal_moves(self.board, legal_moves, color)
-        for move in legal_moves:
-            self.board.play_move(move, color)
+        if time.process_time() - start_time > self.max_seconds:
+            return
+        for move in empty_points:
+            if not self.board.is_legal(move, color):
+                continue
 
             winning_color = self.board.get_tt_entry()
             # if move results in win or loss
@@ -435,8 +449,10 @@ class GtpConnection:
                 # else move was win for opponent(color)
                 continue
 
+            empty_points_copy = empty_points.copy()
+            empty_points_copy.remove(move)
             # else outcome not in tt
-            self.get_outcome(opponent(color))
+            self.get_outcome(opponent(color), empty_points_copy, start_time)
 
             if self.board.get_tt_entry() == color: # this tt_entry now exists
                 self.board.undo_move(move)
@@ -460,11 +476,17 @@ class GtpConnection:
         - If winner ("b" or "w") is the current player, then move should include a winning move.
         - If the winner {"b" or "w"} is not the current player, then no move should be included. 
         """
+        start_time = time.process_time()
         empty_points = self.board.get_empty_points()
         empty_points_set = set(empty_points)
-        # move = self.get_outcome(self.board.current_player)
-        winning_moves = self.get_all_outcomes(self.board.current_player, empty_points_set)
+        #move = self.get_outcome(self.board.current_player, empty_points_set, start_time)
+        winning_moves = self.get_all_outcomes(self.board.current_player, empty_points_set, start_time)
         winner = self.board.get_tt_entry()
+        # if timeout
+        if not winner:
+            self.respond("[unknown]")
+            return
+        # else it was in time
         if winner == self.board.current_player:
             for i in range(len(winning_moves)):
                 move = winning_moves[i]
@@ -472,9 +494,15 @@ class GtpConnection:
                 move_as_string = format_point(move_coord)
                 winning_moves[i] = move_as_string
             self.respond("[" + int_to_color(winner)[0] + " " + str(winning_moves) + "]")
-            #    total_time += time.process_time() - self.start_time
         else:
             self.respond("[" + int_to_color(winner)[0] + "]")
+
+    def timelimit_cmd(self, args: List[str]) -> None:
+        """
+        Sets the time limit
+        """
+        self.max_seconds = int(args[0])
+        return
 
     """
     ==========================================================================
