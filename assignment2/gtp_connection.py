@@ -436,11 +436,13 @@ class GtpConnection:
         board - the current state of the board
         color - corresponds to the player who's turn it is
         """
+        print(time.process_time() - start_time)
         if time.process_time() - start_time > self.max_seconds:
             return
         for move in empty_points:
             if not self.board.is_legal(move, color):
                 continue
+            self.board.play_move(move, color)
 
             winning_color = self.board.get_tt_entry()
             # if move results in win or loss
@@ -457,6 +459,10 @@ class GtpConnection:
             empty_points_copy.remove(move)
             # else outcome not in tt
             self.get_outcome(opponent(color), empty_points_copy, start_time)
+
+            winner = self.board.get_tt_entry()
+            if not winner:
+                return
 
             if self.board.get_tt_entry() == color: # this tt_entry now exists
                 self.board.undo_move(move)
@@ -483,8 +489,8 @@ class GtpConnection:
         start_time = time.process_time()
         empty_points = self.board.get_empty_points()
         empty_points_set = set(empty_points)
-        #move = self.get_outcome(self.board.current_player, empty_points_set, start_time)
-        winning_moves = self.get_all_outcomes(self.board.current_player, empty_points_set, start_time)
+        move = self.get_outcome(self.board.current_player, empty_points_set, start_time)
+        # winning_moves = self.get_all_outcomes(self.board.current_player, empty_points_set, start_time)
         winner = self.board.get_tt_entry()
         # if timeout
         if not winner:
@@ -492,12 +498,12 @@ class GtpConnection:
             return
         # else it was in time
         if winner == self.board.current_player:
-            for i in range(len(winning_moves)):
-                move = winning_moves[i]
-                move_coord = point_to_coord(move, self.board.size)
-                move_as_string = format_point(move_coord)
-                winning_moves[i] = move_as_string
-            self.respond("[" + int_to_color(winner)[0] + " " + str(winning_moves) + "]")
+            #for i in range(len(winning_moves)):
+            # move = winning_moves[i]
+            move_coord = point_to_coord(move, self.board.size)
+            move_as_string = format_point(move_coord)
+            # winning_moves[i] = move_as_string
+            self.respond("[" + int_to_color(winner)[0] + " " + move_as_string + "]")
         else:
             self.respond("[" + int_to_color(winner)[0] + "]")
 

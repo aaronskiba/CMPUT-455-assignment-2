@@ -12,7 +12,7 @@ Implements a basic Go board with functions to:
 The board uses a 1-dimensional representation with padding
 """
 
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 from board_base import (BLACK, BORDER, EMPTY, GO_COLOR, GO_POINT, MAXSIZE,
@@ -44,52 +44,92 @@ class GoBoard(object):
         Adds 8 transposition table entries 
         (4 rotations for current board state + 4 for current board state's mirror image)
         """
-        keys = self.board_to_keys()
-        for key in keys:
+        #[1,2,3,4,5,6,7,8,9]
+        num_string1=""
+        num_string2=""
+        num_string3=""
+        num_string4=""
+        for i in range(self.size):
+            for j in range(self.size):
+                size_times_j = j*self.size
+                
+                #123456789
+                num_string1 += str(self.board[self.non_border_points[i*self.size+j]])
+                #321654987
+                num_string2 += str(self.board[self.non_border_points[(i+1)*self.size-j-1]])
+                #147258369
+                num_string3 += str(self.board[self.non_border_points[i+size_times_j]])
+                #741852963
+                num_string4 += str(self.board[self.non_border_points[self.size_times_times_minus_one+i-size_times_j]])
+
+        #add the reverse of each num_string
+        for key in [num_string1,num_string2,num_string3,num_string4]:
             self.tt[key] = color
+            self.tt[key[::-1]] = color
 
 
     def get_tt_entry(self):
         """
         If stored in the transposition table, return the outcome (1 or 2) for the current board state, else return None.
         """
-        return self.tt.get(self.get_board_value(self.get_twoD_board()))
+        arr = []
+        for point in self.non_border_points:
+            arr.append(self.board[point])
+        key = ''.join(str(i) for i in arr)
+        return self.tt.get(key)
 
 
-    def get_board_value(self, board):
-        # do math to board state such that the board state becomes a dict key
-        arr = np.array(board)
-        flat_arr = arr.flatten()
+    # def get_board_value(self) -> int:
+    #     # do math to board state such that the board state becomes a dict key
+    #     arr = []
+    #     for point in self.non_border_points:
+    #         arr.append(self.board[point])
 
-        return int(''.join(str(i) for i in flat_arr))
+    #     return ''.join(str(i) for i in arr)
 
 
     # def board_to_keys(self):
 
-    #     np_arr: np.ndarray[GO_POINT] = np.zeros((self.size*self.size), dtype=GO_POINT) #TODO: precompute the size
-    #     arr = []
-    #     num_string = ""
-    #     for point in self.non_border_points:
-    #         num_string+=self.board[point]
-    #     arr.append(int(num_string))
+    #     #[1,2,3,4,5,6,7,8,9]
+    #     num_string1=""
+    #     num_string2=""
+    #     num_string3=""
+    #     num_string4=""
+    #     for i in range(self.size):
+    #         for j in range(self.size):
+                
+    #             #123456789
+    #             num_string1 += str(self.board[self.non_border_points[i*self.size+j]])
+    #             #321654987
+    #             num_string2 += str(self.board[self.non_border_points[(i+1)*self.size-j-1]])
+    #             #147258369
+    #             num_string3 += str(self.board[self.non_border_points[i+self.size*j]])
+    #             #741852963
+    #             num_string4 += str(self.board[self.non_border_points[self.size*(self.size-1)+i-j*self.size]])
 
-
-    def board_to_keys(self):
+    #     keys = [num_string1,num_string2,num_string3,num_string4]
+    #     #add the reverse of each num_string
+    #     for num_string in [num_string1,num_string2,num_string3,num_string4]:
+    #         keys.append(num_string[::-1])
         
-        twoD_board = self.get_twoD_board()
-        print(twoD_board,"I am board")
-        flipped_twoD_board = np.flipud(twoD_board)
+    #     return keys
 
-        v1 = self.get_board_value(twoD_board)
-        v2 = self.get_board_value(flipped_twoD_board)
-        keys = [v1,v2]
 
-        for board in [twoD_board,flipped_twoD_board]:
-            for _ in range(3): # only three unique rotations possible
-                board = np.rot90(board)
-            v = self.get_board_value(board)
-            keys.append(v)
-        return keys
+    # def board_to_keys(self):
+        
+    #     twoD_board = self.get_twoD_board()
+    #     flipped_twoD_board = np.flipud(twoD_board)
+
+    #     v1 = self.get_board_value(twoD_board)
+    #     v2 = self.get_board_value(flipped_twoD_board)
+    #     keys = [v1,v2]
+
+    #     for board in [twoD_board,flipped_twoD_board]:
+    #         for _ in range(3): # only three unique rotations possible
+    #             board = np.rot90(board)
+    #         v = self.get_board_value(board)
+    #         keys.append(v)
+    #     return keys
 
 
     def reset(self, size: int) -> None:
@@ -105,6 +145,8 @@ class GoBoard(object):
         self._initialize_empty_points(self.board)
         self.non_border_neighbors: dict = self._initialize_non_border_neighbors_dict()
         self.non_border_points: list = list(self.non_border_neighbors.keys())
+        self.num_non_border_points = len(self.non_border_points)
+        self.size_times_times_minus_one = self.size*(self.size-1)
         
         
     def copy(self) -> 'GoBoard':
@@ -171,7 +213,7 @@ class GoBoard(object):
         This prevents the board from being modified by the move
         """
 
-        assert is_black_white(color)
+        assert(color == 1 or color == 2)
 
         self.board[point] = color
 
