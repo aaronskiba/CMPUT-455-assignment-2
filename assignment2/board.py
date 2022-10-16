@@ -342,7 +342,12 @@ class GoBoard(object):
         
         self.current_player = opponent(color)
         return True
+    
 
+    def undo_move(self, point: GO_POINT):
+        self.board[point] = EMPTY
+
+        
     def neighbors_of_color(self, point: GO_POINT, color: GO_COLOR) -> List:
         """ List of neighbors of point of given color """
         nbc: List[GO_POINT] = []
