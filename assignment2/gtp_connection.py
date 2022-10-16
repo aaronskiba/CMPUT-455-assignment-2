@@ -355,9 +355,10 @@ class GtpConnection:
         move = self.get_outcome(color, empty_points_set, start_time)
         winner = self.board.get_tt_entry()
         if winner == color:
+            self.board.play_move(move, color)
             move_coord = point_to_coord(move, self.board.size)
             move_as_string = format_point(move_coord)
-            self.respond("[" + int_to_color(winner)[0] + " " + move_as_string + "]")
+            self.respond("[" + move_as_string + "]")
             return
         
         move = self.go_engine.get_move(self.board, color)
@@ -384,7 +385,7 @@ class GtpConnection:
         color - corresponds to the player who's turn it is
         """
         opponent_color = 3-color
-        print(time.process_time() - start_time)
+        #print(time.process_time() - start_time)
         if time.process_time() - start_time > self.max_seconds:
             return
         #legal_moves = GoBoardUtil.prioritize_legal_moves(self.board, legal_moves, color)
@@ -438,8 +439,7 @@ class GtpConnection:
         board - the current state of the board
         color - corresponds to the player who's turn it is
         """
-        opponent_color = 3-color
-        print(time.process_time() - start_time)
+        # print(time.process_time() - start_time)
         if time.process_time() - start_time > self.max_seconds: #TODO: put this after recursive call?
             return
         for move in empty_points:
@@ -461,7 +461,7 @@ class GtpConnection:
             empty_points_copy = empty_points.copy()
             empty_points_copy.remove(move)
             # else outcome not in tt
-            self.get_outcome(opponent_color, empty_points_copy, start_time)
+            self.get_outcome(3-color, empty_points_copy, start_time)
 
             winner = self.board.get_tt_entry()
             if not winner:
@@ -476,7 +476,7 @@ class GtpConnection:
 
             self.board.undo_move(move)
         # if no legal_moves or all legal_moves are losing
-        self.board.set_tt_entry(opponent_color)
+        self.board.set_tt_entry(3-color)
             
             
     def solve_cmd(self, args: List[str]) -> None:

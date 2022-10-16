@@ -70,13 +70,13 @@ class GoBoard(object):
             arr2.append(self.non_border_points[i::self.size])
         return [arr1,arr2]
 
+    
     def set_tt_entry(self,color):
         key1=""
         key2=""
         key3=""
         key4=""
         for i in range(self.size):
-            #border_points = str(self.non_border_points[i*self.size:(i+1)*self.size])
             temp1=self.board[self.tt_sub_arrays[0][i]]
             temp1 =''.join(str(i) for i in temp1)
             temp2=self.board[self.tt_sub_arrays[1][i]]
