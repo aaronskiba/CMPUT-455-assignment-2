@@ -493,3 +493,8 @@ def color_to_int(c: str) -> int:
     """convert character to the appropriate integer code"""
     color_to_int = {"b": BLACK, "w": WHITE, "e": EMPTY, "BORDER": BORDER}
     return color_to_int[c]
+
+def int_to_color(i: int) -> str:
+    """convert integer code to the appropriate color"""
+    int_to_color = {BLACK: "black", WHITE: "white", EMPTY: "e", BORDER: "BORDER"}
+    return int_to_color[i]
