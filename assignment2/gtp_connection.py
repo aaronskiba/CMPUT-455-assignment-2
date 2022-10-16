@@ -410,7 +410,7 @@ class GtpConnection:
             return
         
         for move in empty_points:
-            if not self.board.is_legal(move, color):
+            if not self.board.is_legal_new(move, color):
                 continue
             self.board.play_move(move, color)
 
