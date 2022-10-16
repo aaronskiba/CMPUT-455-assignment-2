@@ -72,6 +72,44 @@ class GoBoard(object):
         assert b.maxpoint == self.maxpoint
         b.board = np.copy(self.board)
         return b
+    
+    def get_tt_entry(self):
+        """
+        If stored in the transposition table, return the winner for the current board state, else return None.
+        """
+        arr = []
+        for point in self.non_border_points:
+            arr.append(self.board[point])
+        key = ''.join(str(i) for i in arr)
+        return self.tt.get(key)
+    
+    def set_tt_entry(self,color):
+        """
+        Generates and stores 8 versions (original + 3 rotations + mirror + 3
+        mirror rotations) of the current board state in transposition table
+        """
+        key1=""
+        key2=""
+        key3=""
+        key4=""
+        for i in range(self.size):
+            temp1=self.board[self.tt_sub_arrays[0][i]]
+            temp1 =''.join(str(i) for i in temp1)
+            temp2=self.board[self.tt_sub_arrays[1][i]]
+            temp2=''.join(str(i) for i in temp2)
+            key1+=temp1
+            key2+=temp1[::-1]
+            key3+=temp2
+            key4+=temp2[::-1]
+
+        self.tt[key1]=color
+        self.tt[key2]=color
+        self.tt[key3]=color
+        self.tt[key4]=color
+        self.tt[key1[::-1]]=color
+        self.tt[key2[::-1]]=color
+        self.tt[key3[::-1]]=color
+        self.tt[key4[::-1]]=color
 
         
     def get_color(self, point: GO_POINT) -> GO_COLOR:
