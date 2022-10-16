@@ -383,6 +383,7 @@ class GtpConnection:
         board - the current state of the board
         color - corresponds to the player who's turn it is
         """
+        opponent_color = 3-color
         print(time.process_time() - start_time)
         if time.process_time() - start_time > self.max_seconds:
             return
@@ -407,7 +408,7 @@ class GtpConnection:
             # else outcome not in tt
             empty_points_copy = empty_points.copy()
             empty_points_copy.remove(move)
-            self.get_all_outcomes(opponent(color), empty_points_copy, start_time)
+            self.get_all_outcomes(opponent_color, empty_points_copy, start_time)
 
             winner = self.board.get_tt_entry()
             if not winner:
@@ -426,7 +427,7 @@ class GtpConnection:
         # if no legal_moves are all legal_moves are losing
         if winning_moves:
             return winning_moves
-        self.board.set_tt_entry(opponent(color))
+        self.board.set_tt_entry(opponent_color)
 
     
     def get_outcome(self, color, empty_points: set, start_time):
@@ -437,8 +438,9 @@ class GtpConnection:
         board - the current state of the board
         color - corresponds to the player who's turn it is
         """
+        opponent_color = 3-color
         print(time.process_time() - start_time)
-        if time.process_time() - start_time > self.max_seconds:
+        if time.process_time() - start_time > self.max_seconds: #TODO: put this after recursive call?
             return
         for move in empty_points:
             if not self.board.is_legal(move, color):
@@ -459,7 +461,7 @@ class GtpConnection:
             empty_points_copy = empty_points.copy()
             empty_points_copy.remove(move)
             # else outcome not in tt
-            self.get_outcome(opponent(color), empty_points_copy, start_time)
+            self.get_outcome(opponent_color, empty_points_copy, start_time)
 
             winner = self.board.get_tt_entry()
             if not winner:
@@ -474,7 +476,7 @@ class GtpConnection:
 
             self.board.undo_move(move)
         # if no legal_moves or all legal_moves are losing
-        self.board.set_tt_entry(opponent(color))
+        self.board.set_tt_entry(opponent_color)
             
             
     def solve_cmd(self, args: List[str]) -> None:
@@ -491,8 +493,8 @@ class GtpConnection:
         start_time = time.process_time()
         empty_points = self.board.get_empty_points()
         empty_points_set = set(empty_points)
-        # move = self.get_outcome(self.board.current_player, empty_points_set, start_time)
-        winning_moves = self.get_all_outcomes(self.board.current_player, empty_points_set, start_time)
+        move = self.get_outcome(self.board.current_player, empty_points_set, start_time)
+        #winning_moves = self.get_all_outcomes(self.board.current_player, empty_points_set, start_time)
         winner = self.board.get_tt_entry()
         # if timeout
         if not winner:
@@ -500,12 +502,12 @@ class GtpConnection:
             return
         # else it was in time
         if winner == self.board.current_player:
-            for i in range(len(winning_moves)):
-                move = winning_moves[i]
-                move_coord = point_to_coord(move, self.board.size)
-                move_as_string = format_point(move_coord)
-                winning_moves[i] = move_as_string
-            self.respond("[" + int_to_color(winner)[0] + " " + str(winning_moves) + "]")
+            # for i in range(len(winning_moves)):
+            #     move = winning_moves[i]
+            move_coord = point_to_coord(move, self.board.size)
+            move_as_string = format_point(move_coord)
+            #winning_moves[i] = move_as_string
+            self.respond("[" + int_to_color(winner)[0] + " " + move_as_string + "]")
         else:
             self.respond("[" + int_to_color(winner)[0] + "]")
 
