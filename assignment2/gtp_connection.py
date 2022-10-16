@@ -361,8 +361,30 @@ class GtpConnection:
             
             
     def solve_cmd(self, args: List[str]) -> None:
-        # remove this respond and implement this method
-        self.respond('Implement This for Assignment 2')
+        """
+        Attempts to compute the winner of the current position,
+        assuming perfect play by both, within the current time limit.
+        GTP response is in the following format:
+        = winner [move]
+        winner is "b", "w", or "unknown"
+        - winner is "unknown" if the board cannot be solved within the current time limit
+        - If winner ("b" or "w") is the current player, then move should include a winning move.
+        - If the winner {"b" or "w"} is not the current player, then no move should be included. 
+        """
+        start_time = time.process_time()
+        empty_points = self.board.get_empty_points()
+        move = self.get_outcome(self.board.current_player, set(empty_points), start_time)
+        winner = self.board.get_tt_entry()
+        if not winner: # True if timeout occured
+            self.respond("[unknown]")
+            return
+        # if current player won
+        if winner == self.board.current_player:
+            move_coord = point_to_coord(move, self.board.size)
+            move_as_string = format_point(move_coord)
+            self.respond("[" + int_to_color(winner)[0] + " " + move_as_string + "]")
+        else:
+            self.respond("[" + int_to_color(winner)[0] + "]")
 
 
     def timelimit_cmd(self, args: List[str]) -> None:
