@@ -39,33 +39,65 @@ class GoBoard(object):
         self.reset(size)
         self.tt = tt
 
+    def _initialize_array_of_mirror_and_rotation_arrays(self):
+        arr1 = []
+        arr2 = []
+        arr3 = []
+        arr4 = []
+        #[1,2,3,4,5,6,7,8,9]
+        for i in range(self.size):
+            for j in range(self.size):
+                #123456789
+                arr1.append(self.non_border_points[i*self.size+j])
+                #321654987
+                arr2.append(self.non_border_points[(i+1)*self.size-j-1])
+                #147258369
+                arr3.append(self.non_border_points[i+j*self.size])
+                #741852963
+                arr4.append(self.non_border_points[self.size*(self.size-1)+i-j*self.size])
+
+        final_arr = []
+        for arr in [arr1,arr2,arr3,arr4]:
+            final_arr.append(arr)
+            final_arr.append(arr[::-1])
+        return final_arr
+
+
     def set_tt_entry(self, color):
         """
         Adds 8 transposition table entries 
         (4 rotations for current board state + 4 for current board state's mirror image)
         """
-        #[1,2,3,4,5,6,7,8,9]
-        num_string1=""
-        num_string2=""
-        num_string3=""
-        num_string4=""
-        for i in range(self.size):
-            for j in range(self.size):
-                size_times_j = j*self.size
-                
-                #123456789
-                num_string1 += str(self.board[self.non_border_points[i*self.size+j]])
-                #321654987
-                num_string2 += str(self.board[self.non_border_points[(i+1)*self.size-j-1]])
-                #147258369
-                num_string3 += str(self.board[self.non_border_points[i+size_times_j]])
-                #741852963
-                num_string4 += str(self.board[self.non_border_points[self.size_times_times_minus_one+i-size_times_j]])
 
-        #add the reverse of each num_string
-        for key in [num_string1,num_string2,num_string3,num_string4]:
+        for array in self.array_of_mirror_and_rotation_arrays:
+            key = ""
+            for point in array:
+                key+=str(self.board[point])
             self.tt[key] = color
-            self.tt[key[::-1]] = color
+            
+
+        
+        # num_string1=""
+        # num_string2=""
+        # num_string3=""
+        # num_string4=""
+        # for i in range(self.size):
+        #     for j in range(self.size):
+        #         size_times_j = j*self.size
+                
+        #         #123456789
+        #         num_string1 += str(self.board[self.non_border_points[i*self.size+j]])
+        #         #321654987
+        #         num_string2 += str(self.board[self.non_border_points[(i+1)*self.size-j-1]])
+        #         #147258369
+        #         num_string3 += str(self.board[self.non_border_points[i+size_times_j]])
+        #         #741852963
+        #         num_string4 += str(self.board[self.non_border_points[self.size_times_times_minus_one+i-size_times_j]])
+
+        # #add the reverse of each num_string
+        # for key in [num_string1,num_string2,num_string3,num_string4]:
+        #     self.tt[key] = color
+        #     self.tt[key[::-1]] = color
 
 
     def get_tt_entry(self):
@@ -145,8 +177,7 @@ class GoBoard(object):
         self._initialize_empty_points(self.board)
         self.non_border_neighbors: dict = self._initialize_non_border_neighbors_dict()
         self.non_border_points: list = list(self.non_border_neighbors.keys())
-        self.num_non_border_points = len(self.non_border_points)
-        self.size_times_times_minus_one = self.size*(self.size-1)
+        self.array_of_mirror_and_rotation_arrays: list = self._initialize_array_of_mirror_and_rotation_arrays()
         
         
     def copy(self) -> 'GoBoard':
