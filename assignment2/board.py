@@ -69,35 +69,35 @@ class GoBoard(object):
         (4 rotations for current board state + 4 for current board state's mirror image)
         """
 
-        for array in self.array_of_mirror_and_rotation_arrays:
-            key = ""
-            for point in array:
-                key+=str(self.board[point])
-            self.tt[key] = color
+        # for array in self.array_of_mirror_and_rotation_arrays:
+        #     key = ""
+        #     for point in array:
+        #         key+=str(self.board[point])
+        #     self.tt[key] = color
             
 
         
-        # num_string1=""
-        # num_string2=""
-        # num_string3=""
-        # num_string4=""
-        # for i in range(self.size):
-        #     for j in range(self.size):
-        #         size_times_j = j*self.size
+        num_string1=""
+        num_string2=""
+        num_string3=""
+        num_string4=""
+        for i in range(self.size):
+            for j in range(self.size):
+                size_times_j = j*self.size
                 
-        #         #123456789
-        #         num_string1 += str(self.board[self.non_border_points[i*self.size+j]])
-        #         #321654987
-        #         num_string2 += str(self.board[self.non_border_points[(i+1)*self.size-j-1]])
-        #         #147258369
-        #         num_string3 += str(self.board[self.non_border_points[i+size_times_j]])
-        #         #741852963
-        #         num_string4 += str(self.board[self.non_border_points[self.size_times_times_minus_one+i-size_times_j]])
+                #123456789
+                num_string1 += str(self.board[self.non_border_points[i*self.size+j]])
+                #321654987
+                num_string2 += str(self.board[self.non_border_points[(i+1)*self.size-j-1]])
+                #147258369
+                num_string3 += str(self.board[self.non_border_points[i+size_times_j]])
+                #741852963
+                num_string4 += str(self.board[self.non_border_points[self.size_times_times_minus_one+i-size_times_j]])
 
-        # #add the reverse of each num_string
-        # for key in [num_string1,num_string2,num_string3,num_string4]:
-        #     self.tt[key] = color
-        #     self.tt[key[::-1]] = color
+        #add the reverse of each num_string
+        for key in [num_string1,num_string2,num_string3,num_string4]:
+            self.tt[key] = color
+            self.tt[key[::-1]] = color
 
 
     def get_tt_entry(self):
@@ -178,6 +178,7 @@ class GoBoard(object):
         self.non_border_neighbors: dict = self._initialize_non_border_neighbors_dict()
         self.non_border_points: list = list(self.non_border_neighbors.keys())
         self.array_of_mirror_and_rotation_arrays: list = self._initialize_array_of_mirror_and_rotation_arrays()
+        self.size_times_times_minus_one = self.size*(self.size-1)
         
         
     def copy(self) -> 'GoBoard':
@@ -243,8 +244,9 @@ class GoBoard(object):
         This method tries to play the move on a temporary copy of the board.
         This prevents the board from being modified by the move
         """
+        opponent_color = 3-color
 
-        assert(color == 1 or color == 2)
+        #assert(color == 1 or color == 2)
 
         self.board[point] = color
 
@@ -253,11 +255,12 @@ class GoBoard(object):
         opponent_neighbors = set()
 
         for nb in self.non_border_neighbors[point]:
-            if self.get_color(nb) == color:
+            self.board[point]
+            if self.board[nb] == color:
                 same_neighbors.add(nb)
-            elif self.get_color(nb) == opponent(color):
+            elif self.board[nb] == opponent_color:
                 opponent_neighbors.add(nb)
-            elif self.get_color(nb) == EMPTY:
+            elif self.board[nb] == EMPTY:
                 empty_neighbors.add(nb)
 
         # if stone has zero liberties
@@ -290,7 +293,7 @@ class GoBoard(object):
                 if nb in liberty_set:
                     continue
                 # see if block of nb has at least one liberty 
-                is_liberty, visited = self.depth_first_liberty_search(set(), liberty_set, nb, opponent(color))
+                is_liberty, visited = self.depth_first_liberty_search(set(), liberty_set, nb, opponent_color)
                 if not is_liberty:
                     self.board[point] = EMPTY
                     return False
@@ -313,9 +316,9 @@ class GoBoard(object):
         #     return True, visited
         for nb in self.non_border_neighbors[stone]:
             if nb not in visited: # ignore previously visited stones
-                if self.get_color(nb) == EMPTY:
+                if self.board[nb] == EMPTY:
                     return True, visited
-                if self.get_color(nb) == color:
+                if self.board[nb] == color:
                     # see if this stone has at least one liberty
                     is_liberty, visited = self.depth_first_liberty_search_simple(visited, nb, color)
                     if is_liberty:
@@ -331,9 +334,9 @@ class GoBoard(object):
         if stone not in visited:
             visited.add(stone)
             for nb in self.non_border_neighbors[stone]:
-                if self.get_color(nb) == EMPTY:
+                if self.board[nb] == EMPTY:
                     return True, visited
-                if self.get_color(nb) == color: # if nb is part of block
+                if self.board[nb] == color: # if nb is part of block
                     if nb in liberty_set:
                         return True, visited
                     # see if this stone has at least one liberty
@@ -407,6 +410,12 @@ class GoBoard(object):
             elif self.board[d] == opp_color:
                 false_count += 1
         return false_count <= 1 - at_edge  # 0 at edge, 1 in center
+    
+    def is_in_own_eye(self, point: GO_POINT, color: GO_COLOR) -> bool:
+        for point in self.non_border_neighbors[point]:
+            if self.board[point] != color:
+                return False
+        return True
         
         
     def _is_surrounded(self, point: GO_POINT, color: GO_COLOR) -> bool:
