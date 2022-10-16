@@ -99,7 +99,7 @@ class GoBoard(object):
                 current_player_neighbors.append(nb)
             elif self.board[nb] == opponent_color:
                 opponent_neighbors.append(nb)
-            elif self.board[nb] == EMPTY:
+            else: #self.board[nb] == EMPTY
                 empty_neighbors.append(nb)
 
         # if stone has zero liberties
@@ -110,15 +110,14 @@ class GoBoard(object):
                 self.board[point] = EMPTY
                 return False
    
-            # else point is surrounded and has at least one neighbor that is own color
+            # else point is surrounded and has >=1 neighbor that is own color
             # determine if block for own color has any liberties
             visited = set()
-            liberty_found = False # flag for determining current_player block containing point has at least one liberty
-            # while list not empty and liberty not found
+            liberty_found = False # flag for identifying if block including point has at least one liberty
             while current_player_neighbors and not liberty_found:
-                point1 = current_player_neighbors.pop()
-                visited.add(point1)
-                for nb in self.non_border_neighbors[point1]:
+                p1 = current_player_neighbors.pop()
+                visited.add(p1)
+                for nb in self.non_border_neighbors[p1]:
                     if nb in visited:
                         continue
                     if self.board[nb] == EMPTY:
@@ -132,28 +131,28 @@ class GoBoard(object):
                 return False
           
         if opponent_neighbors:
-            # for suicide, we only had to check for a single liberty within a single block.
-            # for capture, we have to check for a single liberty FOR EACH opponent_neighbor
-                # However, some opponent neighbors may belong to the same block
+            # for suicide, we only had to check for at least one liberty within the block containing point.
+            # for capture, we have to check for at least one liberty FOR EACH opponent_neighbor
+                # NOTE: Some opponent neighbors may belong to the same block
             liberty_set = set()
-            for point2 in opponent_neighbors: # opponent neighbors may belong to same or different block(s)
+            for p2 in opponent_neighbors: # opponent neighbors may belong to same or different block(s)
                 # if nb belongs to a block that was already found to have a liberty
-                if point2 in liberty_set:
+                if p2 in liberty_set:
                     liberty_found = True
                     continue
-                # else we need to determine if this point has a liberty
+                # else we need to determine if the block containing this point has a liberty
                 liberty_found = False
-                stack = [point2]
+                stack = [p2]
                 visited = set()
                 while stack and not liberty_found:
-                    point2 = stack.pop()
-                    visited.add(point2)
-                    for nb in self.non_border_neighbors[point2]:
+                    p2 = stack.pop()
+                    visited.add(p2)
+                    for nb in self.non_border_neighbors[p2]:
                         if nb in visited:
                             continue
                         if self.board[nb] == EMPTY:
                             liberty_found = True
-                            liberty_set.update(set(visited)) # visited belongs to a block with at least one liberty
+                            liberty_set.update(set(visited)) # visited has at least one liberty (Thus, neighboring points of same color have a liberty too)
                             break
                         if self.board[nb] == opponent_color:
                             if nb in liberty_set:
@@ -162,11 +161,10 @@ class GoBoard(object):
                             # else determine if block including non-visited opponent stone has a liberty
                             stack.append(nb)
 
-                # True if stack was emptied and a liberty wasn't found
-                if not liberty_found:
+                if not liberty_found: # True if block containing p2 has no liberties
                     self.board[point] = EMPTY
                     return False
-            
+        # else move is legal
         self.board[point] = EMPTY
         return True
 
@@ -198,17 +196,19 @@ class GoBoard(object):
     def _initialize_non_border_neighbors_dict(self):
         """
         Creates and returns a dict whose keys are non-BORDER points
-        and values are a list of non-BORDER neighbors for each point
+        and values are a list of non-BORDER neighbors for each key/point
         ---------
         board: numpy array, filled with BORDER
         """
         dict = {}
         for point in range(self.maxpoint):
+            # only get non-border points
             if self.board[point] != EMPTY:
                 continue
             arr = []
             neighbors = self._neighbors(point)
             for nb in neighbors:
+                # only add non-border neighbors
                 if self.board[nb] == EMPTY:
                     arr.append(nb)
                 dict[point] = arr
