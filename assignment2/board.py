@@ -61,6 +61,7 @@ class GoBoard(object):
         self.maxpoint: int = board_array_size(size)
         self.board: np.ndarray[GO_POINT] = np.full(self.maxpoint, BORDER, dtype=GO_POINT)
         self._initialize_empty_points(self.board)
+        self.non_border_neighbors: dict = self._initialize_non_border_neighbors_dict()
         
         
     def copy(self) -> 'GoBoard':
@@ -170,7 +171,6 @@ class GoBoard(object):
         return True
 
         
-        
     def is_legal(self, point: GO_POINT, color: GO_COLOR) -> bool:
         """
         Check whether it is legal for color to play on point
@@ -194,6 +194,25 @@ class GoBoard(object):
         assert row >= 1
         assert row <= self.size
         return row * self.NS + 1
+    
+    def _initialize_non_border_neighbors_dict(self):
+        """
+        Creates and returns a dict whose keys are non-BORDER points
+        and values are a list of non-BORDER neighbors for each point
+        ---------
+        board: numpy array, filled with BORDER
+        """
+        dict = {}
+        for point in range(self.maxpoint):
+            if self.board[point] != EMPTY:
+                continue
+            arr = []
+            neighbors = self._neighbors(point)
+            for nb in neighbors:
+                if self.board[nb] == EMPTY:
+                    arr.append(nb)
+                dict[point] = arr
+        return dict
         
         
     def _initialize_empty_points(self, board_array: np.ndarray) -> None:
