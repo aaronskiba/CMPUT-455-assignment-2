@@ -53,7 +53,8 @@ class GtpConnection:
             "legal_moves": self.legal_moves_cmd,
             "gogui-rules_legal_moves": self.gogui_rules_legal_moves_cmd,
             "gogui-rules_final_result": self.gogui_rules_final_result_cmd,
-            "solve": self.solve_cmd
+            "solve": self.solve_cmd,
+            "timelimit": self.timelimit_cmd
         }
 
         # argmap is used for argument checking
@@ -363,6 +364,14 @@ class GtpConnection:
         # remove this respond and implement this method
         self.respond('Implement This for Assignment 2')
 
+
+    def timelimit_cmd(self, args: List[str]) -> None:
+        """
+        Sets the time limit
+        """
+        self.max_seconds = int(args[0])
+        self.respond()
+        return
 
 
     def get_outcome(self, color, empty_points: set, start_time):
