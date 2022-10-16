@@ -49,6 +49,7 @@ class GoBoard(object):
         self.board: np.ndarray[GO_POINT] = np.full(self.maxpoint, BORDER, dtype=GO_POINT)
         self._initialize_empty_points(self.board)
         self.non_border_neighbors: dict = self._initialize_non_border_neighbors_dict()
+        self.non_border_points: list = list(self.non_border_neighbors.keys())
         self.tt_sub_arrays = self._initialize_tt_sub_arrays()
         self.tt = {}
         
