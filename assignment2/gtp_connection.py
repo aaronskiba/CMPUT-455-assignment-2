@@ -370,6 +370,59 @@ class GtpConnection:
         # remove this respond and implement this method
         self.respond('Implement This for Assignment 2')
 
+
+
+    def get_outcome(self, color, empty_points: set, start_time):
+        """
+        Attempts to solve a Go board state
+        @return: a winning move for the board state, if one exists for the current color; else None
+        @params:
+        color: int corresponding to the player who's turn it is
+        empty_points: set of empty points on the board
+        start_time: number corresponding to when solve_cmd() was entered
+        """
+
+        if time.process_time() - start_time > self.max_seconds: #TODO: put this after recursive call?
+            return
+        
+        for move in empty_points:
+            if not self.board.is_legal(move, color):
+                continue
+            self.board.play_move(move, color)
+
+            winning_color = self.board.get_tt_entry()
+            # if move results in win or loss
+            if winning_color != None:
+                self.board.undo_move(move)
+                if winning_color == color:
+                    # set color as winner of the board state prior to playing the move
+                    self.board.set_tt_entry(color)
+                    return move
+                # else move was win for opponent
+                continue
+
+            # else outcome not in tt
+            empty_points_copy = empty_points.copy()
+            empty_points_copy.remove(move)
+            self.get_outcome(3-color, empty_points_copy, start_time)
+
+            winner = self.board.get_tt_entry()
+            self.board.undo_move(move)
+
+            if winner:
+                if winner == color:
+                # set color as winner of the board state prior to playing the move
+                    self.board.set_tt_entry(color)
+                    return move
+                # else win for opponent
+                continue
+            # else timeout has occured
+            else:
+                return
+            
+        # if no legal_moves or all legal_moves are losing
+        self.board.set_tt_entry(3-color)
+
     """
     ==========================================================================
     Assignment 2 - game-specific commands end here
