@@ -78,6 +78,96 @@ class GoBoard(object):
 
     def pt(self, row: int, col: int) -> GO_POINT:
         return coord_to_point(row, col, self.size)
+    
+    def is_legal_new(self, point: GO_POINT, color: GO_COLOR) -> bool:
+        """
+        Check whether it is legal for color to play on point
+        This method tries to play the move on a temporary copy of the board.
+        This prevents the board from being modified by the move
+        """
+        
+        opponent_color = 3-color
+        self.board[point] = color
+
+        # sort neighbors of point
+        empty_neighbors = []
+        current_player_neighbors = []
+        opponent_neighbors = []
+        for nb in self.non_border_neighbors[point]:
+            if self.board[nb] == color:
+                current_player_neighbors.append(nb)
+            elif self.board[nb] == opponent_color:
+                opponent_neighbors.append(nb)
+            elif self.board[nb] == EMPTY:
+                empty_neighbors.append(nb)
+
+        # if stone has zero liberties
+        if not empty_neighbors:
+            # if stone is surrounded by opponent stones
+            if not current_player_neighbors:
+                # move is either suicide or capture
+                self.board[point] = EMPTY
+                return False
+   
+            # else point is surrounded and has at least one neighbor that is own color
+            # determine if block for own color has any liberties
+            visited = set()
+            liberty_found = False # flag for determining current_player block containing point has at least one liberty
+            # while list not empty and liberty not found
+            while current_player_neighbors and not liberty_found:
+                point1 = current_player_neighbors.pop()
+                visited.add(point1)
+                for nb in self.non_border_neighbors[point1]:
+                    if nb in visited:
+                        continue
+                    if self.board[nb] == EMPTY:
+                        liberty_found = True
+                        break
+                    if self.board[nb] == color:
+                        current_player_neighbors.append(nb)
+
+            if not liberty_found:
+                self.board[point] = EMPTY
+                return False
+          
+        if opponent_neighbors:
+            # for suicide, we only had to check for a single liberty within a single block.
+            # for capture, we have to check for a single liberty FOR EACH opponent_neighbor
+                # However, some opponent neighbors may belong to the same block
+            liberty_set = set()
+            for point2 in opponent_neighbors: # opponent neighbors may belong to same or different block(s)
+                # if nb belongs to a block that was already found to have a liberty
+                if point2 in liberty_set:
+                    liberty_found = True
+                    continue
+                # else we need to determine if this point has a liberty
+                liberty_found = False
+                stack = [point2]
+                visited = set()
+                while stack and not liberty_found:
+                    point2 = stack.pop()
+                    visited.add(point2)
+                    for nb in self.non_border_neighbors[point2]:
+                        if nb in visited:
+                            continue
+                        if self.board[nb] == EMPTY:
+                            liberty_found = True
+                            liberty_set.update(set(visited)) # visited belongs to a block with at least one liberty
+                            break
+                        if self.board[nb] == opponent_color:
+                            if nb in liberty_set:
+                                liberty_found = True
+                                break
+                            # else determine if block including non-visited opponent stone has a liberty
+                            stack.append(nb)
+
+                # True if stack was emptied and a liberty wasn't found
+                if not liberty_found:
+                    self.board[point] = EMPTY
+                    return False
+            
+        self.board[point] = EMPTY
+        return True
 
         
         
