@@ -49,6 +49,8 @@ class GoBoard(object):
         self.board: np.ndarray[GO_POINT] = np.full(self.maxpoint, BORDER, dtype=GO_POINT)
         self._initialize_empty_points(self.board)
         self.non_border_neighbors: dict = self._initialize_non_border_neighbors_dict()
+        self.tt_sub_arrays = self._initialize_tt_sub_arrays()
+        self.tt = {}
         
         
     def copy(self) -> 'GoBoard':
@@ -59,6 +61,15 @@ class GoBoard(object):
         assert b.maxpoint == self.maxpoint
         b.board = np.copy(self.board)
         return b
+    
+
+    def _initialize_tt_sub_arrays(self):
+        arr1=[]
+        arr2=[]
+        for i in range(self.size):
+            arr1.append(self.non_border_points[i*self.size:(i+1)*self.size])
+            arr2.append(self.non_border_points[i::self.size])
+        return [arr1,arr2]
     
     def get_tt_entry(self):
         """
