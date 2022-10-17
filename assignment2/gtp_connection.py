@@ -24,6 +24,21 @@ from board_util import GoBoardUtil
 from engine import GoEngine
 
 
+# https://stackoverflow.com/questions/366682/how-to-limit-execution-time-of-a-function-call
+class TimeoutException(Exception): pass
+
+@contextmanager
+def time_limit(seconds):
+    def signal_handler(signum, frame):
+        raise TimeoutException("Timed out!")
+    signal.signal(signal.SIGALRM, signal_handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+
+
 class GtpConnection:
     max_seconds = 1
     def __init__(self, go_engine: GoEngine, board: GoBoard, debug_mode: bool = False) -> None:
@@ -406,6 +421,7 @@ class GtpConnection:
             self.respond(int_to_color(winner)[0] + " " + move_as_string[0].lower() + move_as_string[1])
         else:
             self.respond(int_to_color(winner)[0])
+        print(time.process_time()-start_time)
 
 
     def timelimit_cmd(self, args: List[str]) -> None:
