@@ -91,10 +91,11 @@ class GoBoard(object):
         key3=""
         key4=""
         for i in range(self.size):
-            temp1=self.board[self.tt_sub_arrays[0][i]]
-            temp1 =''.join(str(i) for i in temp1)
-            temp2=self.board[self.tt_sub_arrays[1][i]]
-            temp2=''.join(str(i) for i in temp2)
+            temp1=""
+            temp2=""
+            for j in range(self.size):
+                temp1+=str(self.board[self.tt_sub_arrays[0][i][j]])
+                temp2+=str(self.board[self.tt_sub_arrays[1][i][j]])
             key1+=temp1
             key2+=temp1[::-1]
             key3+=temp2
