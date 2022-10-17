@@ -9,8 +9,10 @@ in the Deep-Go project by Isaac Henrion and Amos Storkey
 at the University of Edinburgh.
 """
 import re
+import signal
 import time
 import traceback
+from contextlib import contextmanager
 from sys import stderr, stdin, stdout
 from typing import Any, Callable, Dict, List, Tuple
 
@@ -21,6 +23,19 @@ from board_base import (BLACK, BORDER, EMPTY, GO_COLOR, GO_POINT, MAXSIZE,
 from board_util import GoBoardUtil
 from engine import GoEngine
 
+# https://stackoverflow.com/questions/366682/how-to-limit-execution-time-of-a-function-call
+class TimeoutException(Exception): pass
+
+@contextmanager
+def time_limit(seconds):
+    def signal_handler(signum, frame):
+        raise TimeoutException("Timed out!")
+    signal.signal(signal.SIGALRM, signal_handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
 
 class GtpConnection:
     max_seconds = 1
@@ -391,12 +406,18 @@ class GtpConnection:
         - If the winner {"b" or "w"} is not the current player, then no move should be included. 
         """
         start_time = time.process_time()
-        empty_points = self.board.get_empty_points()
-        move = self.get_outcome(self.board.current_player, set(empty_points), start_time)
-        winner = self.board.get_tt_entry()
-        if not winner: # True if timeout occured
+        try:
+            with time_limit(self.max_seconds):
+                empty_points = self.board.get_empty_points()
+                move = self.get_outcome(self.board.current_player, set(empty_points), start_time)
+                is_timeout = False
+        except TimeoutException as e:
+            is_timeout = True
+        if is_timeout:
             self.respond("unknown")
             return
+        winner = self.board.get_tt_entry()
+        print(time.process_time() - start_time)
         # if current player won
         if winner == self.board.current_player:
             move_coord = point_to_coord(move, self.board.size)
@@ -424,8 +445,6 @@ class GtpConnection:
         empty_points: set of empty points on the board
         start_time: number corresponding to when solve_cmd() was entered
         """
-        if time.process_time() - start_time > self.max_seconds: #TODO: put this after recursive call?
-            return
         
         for move in empty_points:
             if not self.board.is_legal_new(move, color):
