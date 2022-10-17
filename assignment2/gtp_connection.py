@@ -370,18 +370,24 @@ class GtpConnection:
         if not legal_moves:
             self.respond('resign')
             return
-        # else try to solve
-        start_time = time.process_time()
-        empty_points = self.board.get_empty_points()
-        move = self.get_outcome(color, set(empty_points), start_time)
-        winner = self.board.get_tt_entry()
-        # if winning move found for current player
-        if winner == color:
-            self.board.play_move(move, color)
-            move_coord = point_to_coord(move, self.board.size)
-            move_as_string = format_point(move_coord)
-            self.respond(move_as_string[0].lower() + move_as_string[1])
-            return
+        
+        is_timeout = False
+        try:
+            with time_limit(self.max_seconds):
+                empty_points = self.board.get_empty_points()
+                move = self.get_outcome(self.board.current_player, set(empty_points))
+        except TimeoutException as e:
+            is_timeout = True
+
+        if not is_timeout:
+            winner = self.board.get_tt_entry()
+            # if winning move found for current player
+            if winner == color:
+                self.board.play_move(move, color)
+                move_coord = point_to_coord(move, self.board.size)
+                move_as_string = format_point(move_coord)
+                self.respond(move_as_string[0].lower() + move_as_string[1])
+                return
         # else (timeout or loss) play a random move
         move = self.go_engine.get_move(self.board, color)
         if move is None:
@@ -408,12 +414,19 @@ class GtpConnection:
         - If the winner {"b" or "w"} is not the current player, then no move should be included. 
         """
         start_time = time.process_time()
-        empty_points = self.board.get_empty_points()
-        move = self.get_outcome(self.board.current_player, set(empty_points), start_time)
-        winner = self.board.get_tt_entry()
-        if not winner: # True if timeout occured
+        is_timeout = False
+        try:
+            with time_limit(self.max_seconds):
+                empty_points = self.board.get_empty_points()
+                move = self.get_outcome(self.board.current_player, set(empty_points))
+        except TimeoutException as e:
+            is_timeout = True
+        
+        if is_timeout:
             self.respond("unknown")
             return
+        
+        winner = self.board.get_tt_entry()
         # if current player won
         if winner == self.board.current_player:
             move_coord = point_to_coord(move, self.board.size)
@@ -433,7 +446,7 @@ class GtpConnection:
         return
 
 
-    def get_outcome(self, color, empty_points: set, start_time):
+    def get_outcome(self, color, empty_points: set):
         """
         Attempts to solve a Go board state
         @return: a winning move for the board state, if one exists for the current color; else None
@@ -442,8 +455,6 @@ class GtpConnection:
         empty_points: set of empty points on the board
         start_time: number corresponding to when solve_cmd() was entered
         """
-        if time.process_time() - start_time > self.max_seconds: #TODO: put this after recursive call?
-            return
         
         for move in empty_points:
             if not self.board.is_legal_new(move, color):
@@ -464,7 +475,7 @@ class GtpConnection:
             # else outcome not in tt
             empty_points_copy = empty_points.copy()
             empty_points_copy.remove(move)
-            self.get_outcome(3-color, empty_points_copy, start_time)
+            self.get_outcome(3-color, empty_points_copy)
 
             winner = self.board.get_tt_entry()
             self.board.undo_move(move)
