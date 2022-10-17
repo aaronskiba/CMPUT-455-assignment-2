@@ -404,6 +404,7 @@ class GtpConnection:
             self.respond(int_to_color(winner)[0] + " " + move_as_string[0].lower() + move_as_string[1])
         else:
             self.respond(int_to_color(winner)[0])
+        print(time.process_time() - start_time)
 
 
     def timelimit_cmd(self, args: List[str]) -> None:
