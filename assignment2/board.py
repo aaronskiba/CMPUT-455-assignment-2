@@ -342,7 +342,12 @@ class GoBoard(object):
         """
         opp_block = self._block_of(nb_point)
         return not self._has_liberty(opp_block)
-
+    
+    def play_move_new(self, point: GO_POINT, color: GO_COLOR) -> bool:
+        """
+        Play a move of color on point
+        """
+        self.board[point] = color
 
     def play_move(self, point: GO_POINT, color: GO_COLOR) -> bool:
         """

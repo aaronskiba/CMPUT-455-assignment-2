@@ -405,14 +405,14 @@ class GtpConnection:
         empty_points: set of empty points on the board
         start_time: number corresponding to when solve_cmd() was entered
         """
-
+        print(time.process_time() - start_time)
         if time.process_time() - start_time > self.max_seconds: #TODO: put this after recursive call?
             return
         
         for move in empty_points:
             if not self.board.is_legal_new(move, color):
                 continue
-            self.board.play_move(move, color)
+            self.board.play_move_new(move, color)
 
             winning_color = self.board.get_tt_entry()
             # if move results in win or loss
