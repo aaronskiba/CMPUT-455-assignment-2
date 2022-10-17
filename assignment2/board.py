@@ -442,7 +442,29 @@ class GoBoard(object):
                 self.board[move] = EMPTY
                 if winning_color == color:
                     # set color as winner of the board state prior to playing the move
-                    self.set_tt_entry(color)
+                    key1=""
+                    key2=""
+                    key3=""
+                    key4=""
+                    for i in range(self.size):
+                        temp1=""
+                        temp2=""
+                        for j in range(self.size):
+                            temp1+=str(self.board[self.tt_sub_arrays[0][i][j]])
+                            temp2+=str(self.board[self.tt_sub_arrays[1][i][j]])
+                        key1+=temp1
+                        key2+=temp1[::-1]
+                        key3+=temp2
+                        key4+=temp2[::-1]
+
+                    self.tt[key1]=color
+                    self.tt[key2]=color
+                    self.tt[key3]=color
+                    self.tt[key4]=color
+                    self.tt[key1[::-1]]=color
+                    self.tt[key2[::-1]]=color
+                    self.tt[key3[::-1]]=color
+                    self.tt[key4[::-1]]=color
                     return move
                 # else move was win for opponent
                 continue
@@ -460,8 +482,30 @@ class GoBoard(object):
 
             if winner:
                 if winner == color:
-                # set color as winner of the board state prior to playing the move
-                    self.set_tt_entry(color)
+                    # set color as winner of the board state prior to playing the move
+                    key1=""
+                    key2=""
+                    key3=""
+                    key4=""
+                    for i in range(self.size):
+                        temp1=""
+                        temp2=""
+                        for j in range(self.size):
+                            temp1+=str(self.board[self.tt_sub_arrays[0][i][j]])
+                            temp2+=str(self.board[self.tt_sub_arrays[1][i][j]])
+                        key1+=temp1
+                        key2+=temp1[::-1]
+                        key3+=temp2
+                        key4+=temp2[::-1]
+
+                    self.tt[key1]=color
+                    self.tt[key2]=color
+                    self.tt[key3]=color
+                    self.tt[key4]=color
+                    self.tt[key1[::-1]]=color
+                    self.tt[key2[::-1]]=color
+                    self.tt[key3[::-1]]=color
+                    self.tt[key4[::-1]]=color
                     return move
                 # else win for opponent
                 continue
@@ -470,4 +514,26 @@ class GoBoard(object):
                 return
             
         # if no legal_moves or all legal_moves are losing
-        self.set_tt_entry(opponent_color)
+        key1=""
+        key2=""
+        key3=""
+        key4=""
+        for i in range(self.size):
+            temp1=""
+            temp2=""
+            for j in range(self.size):
+                temp1+=str(self.board[self.tt_sub_arrays[0][i][j]])
+                temp2+=str(self.board[self.tt_sub_arrays[1][i][j]])
+            key1+=temp1
+            key2+=temp1[::-1]
+            key3+=temp2
+            key4+=temp2[::-1]
+
+        self.tt[key1]=opponent_color
+        self.tt[key2]=opponent_color
+        self.tt[key3]=opponent_color
+        self.tt[key4]=opponent_color
+        self.tt[key1[::-1]]=opponent_color
+        self.tt[key2[::-1]]=opponent_color
+        self.tt[key3[::-1]]=opponent_color
+        self.tt[key4[::-1]]=opponent_color
