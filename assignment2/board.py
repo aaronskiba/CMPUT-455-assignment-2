@@ -416,3 +416,124 @@ class GoBoard(object):
         """
         board_moves: List[GO_POINT] = []
         return board_moves
+    
+
+    def get_outcome(self, color, empty_points: set):
+        """
+        Attempts to solve a Go board state
+        @return: a winning move for the board state, if one exists for the current color; else None
+        @params:
+        color: int corresponding to the player who's turn it is
+        empty_points: set of empty points on the board
+        start_time: number corresponding to when solve_cmd() was entered
+        """
+        opponent_color = 3-color
+        for move in empty_points:
+            if not self.is_legal_new(move, color):
+                continue
+            self.board[move] = color
+
+            key = ""
+            for point in self.non_border_points:
+                key+=str(self.board[point])
+            winning_color = self.tt.get(key)
+            # if move results in win or loss
+            if winning_color != None:
+                self.board[move] = EMPTY
+                if winning_color == color:
+                    # set color as winner of the board state prior to playing the move
+                    key1=""
+                    key2=""
+                    key3=""
+                    key4=""
+                    for i in range(self.size):
+                        temp1=""
+                        temp2=""
+                        for j in range(self.size):
+                            temp1+=str(self.board[self.tt_sub_arrays[0][i][j]])
+                            temp2+=str(self.board[self.tt_sub_arrays[1][i][j]])
+                        key1+=temp1
+                        key2+=temp1[::-1]
+                        key3+=temp2
+                        key4+=temp2[::-1]
+
+                    self.tt[key1]=color
+                    self.tt[key2]=color
+                    self.tt[key3]=color
+                    self.tt[key4]=color
+                    self.tt[key1[::-1]]=color
+                    self.tt[key2[::-1]]=color
+                    self.tt[key3[::-1]]=color
+                    self.tt[key4[::-1]]=color
+                    return move
+                # else move was win for opponent
+                continue
+
+            # else outcome not in tt
+            empty_points_copy = empty_points.copy()
+            empty_points_copy.remove(move)
+            self.get_outcome(opponent_color, empty_points_copy)
+
+            key = ""
+            for point in self.non_border_points:
+                key+=str(self.board[point])
+            winner = self.tt.get(key)
+            self.board[move] = EMPTY
+
+            if winner:
+                if winner == color:
+                # set color as winner of the board state prior to playing the move
+                    key1=""
+                    key2=""
+                    key3=""
+                    key4=""
+                    for i in range(self.size):
+                        temp1=""
+                        temp2=""
+                        for j in range(self.size):
+                            temp1+=str(self.board[self.tt_sub_arrays[0][i][j]])
+                            temp2+=str(self.board[self.tt_sub_arrays[1][i][j]])
+                        key1+=temp1
+                        key2+=temp1[::-1]
+                        key3+=temp2
+                        key4+=temp2[::-1]
+
+                    self.tt[key1]=color
+                    self.tt[key2]=color
+                    self.tt[key3]=color
+                    self.tt[key4]=color
+                    self.tt[key1[::-1]]=color
+                    self.tt[key2[::-1]]=color
+                    self.tt[key3[::-1]]=color
+                    self.tt[key4[::-1]]=color
+                    return move
+                # else win for opponent
+                continue
+            # else timeout has occured
+            else:
+                return
+            
+        # if no legal_moves or all legal_moves are losing
+        key1=""
+        key2=""
+        key3=""
+        key4=""
+        for i in range(self.size):
+            temp1=""
+            temp2=""
+            for j in range(self.size):
+                temp1+=str(self.board[self.tt_sub_arrays[0][i][j]])
+                temp2+=str(self.board[self.tt_sub_arrays[1][i][j]])
+            key1+=temp1
+            key2+=temp1[::-1]
+            key3+=temp2
+            key4+=temp2[::-1]
+
+        self.tt[key1]=opponent_color
+        self.tt[key2]=opponent_color
+        self.tt[key3]=opponent_color
+        self.tt[key4]=opponent_color
+        self.tt[key1[::-1]]=opponent_color
+        self.tt[key2[::-1]]=opponent_color
+        self.tt[key3[::-1]]=opponent_color
+        self.tt[key4[::-1]]=opponent_color
