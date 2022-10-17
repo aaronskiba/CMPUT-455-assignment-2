@@ -23,6 +23,7 @@ from engine import GoEngine
 
 
 class GtpConnection:
+    max_seconds = 1
     def __init__(self, go_engine: GoEngine, board: GoBoard, debug_mode: bool = False) -> None:
         """
         Manage a GTP connection for a Go-playing engine
