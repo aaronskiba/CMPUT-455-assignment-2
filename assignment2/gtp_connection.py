@@ -350,7 +350,6 @@ class GtpConnection:
         board_color = args[0].lower()
         color = color_to_int(board_color)
         legal_moves = GoBoardUtil.generate_legal_moves(self.board, color)
-        print(legal_moves)
         if not legal_moves:
             self.respond('[resign]')
             return
@@ -366,7 +365,7 @@ class GtpConnection:
             move_as_string = format_point(move_coord)
             self.respond("[" + move_as_string + "]")
             return
-        # else get a random move
+        # else (timeout or loss) play a random move
         move = self.go_engine.get_move(self.board, color)
         if move is None:
             self.respond('[resign]')
