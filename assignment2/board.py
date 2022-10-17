@@ -416,3 +416,52 @@ class GoBoard(object):
         """
         board_moves: List[GO_POINT] = []
         return board_moves
+    
+
+    def get_outcome(self, color, empty_points: set):
+        """
+        Attempts to solve a Go board state
+        @return: a winning move for the board state, if one exists for the current color; else None
+        @params:
+        color: int corresponding to the player who's turn it is
+        empty_points: set of empty points on the board
+        start_time: number corresponding to when solve_cmd() was entered
+        """
+        
+        for move in empty_points:
+            if not self.is_legal_new(move, color):
+                continue
+            self.board[color] = move
+
+            winning_color = self.get_tt_entry()
+            # if move results in win or loss
+            if winning_color != None:
+                self.board[color] = EMPTY
+                if winning_color == color:
+                    # set color as winner of the board state prior to playing the move
+                    self.set_tt_entry(color)
+                    return move
+                # else move was win for opponent
+                continue
+
+            # else outcome not in tt
+            empty_points_copy = empty_points.copy()
+            empty_points_copy.remove(move)
+            self.get_outcome(3-color, empty_points_copy)
+
+            winner = self.get_tt_entry()
+            self.board[color] = EMPTY
+
+            if winner:
+                if winner == color:
+                # set color as winner of the board state prior to playing the move
+                    self.set_tt_entry(color)
+                    return move
+                # else win for opponent
+                continue
+            # else timeout has occured
+            else:
+                return
+            
+        # if no legal_moves or all legal_moves are losing
+        self.set_tt_entry(3-color)
