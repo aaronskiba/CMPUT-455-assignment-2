@@ -351,7 +351,7 @@ class GtpConnection:
         color = color_to_int(board_color)
         legal_moves = GoBoardUtil.generate_legal_moves(self.board, color)
         if not legal_moves:
-            self.respond('[resign]')
+            self.respond('resign')
             return
         # else try to solve
         start_time = time.process_time()
@@ -363,7 +363,7 @@ class GtpConnection:
             self.board.play_move(move, color)
             move_coord = point_to_coord(move, self.board.size)
             move_as_string = format_point(move_coord)
-            self.respond("[" + move_as_string + "]")
+            self.respond("move_as_string")
             return
         # else (timeout or loss) play a random move
         move = self.go_engine.get_move(self.board, color)
@@ -395,15 +395,15 @@ class GtpConnection:
         move = self.get_outcome(self.board.current_player, set(empty_points), start_time)
         winner = self.board.get_tt_entry()
         if not winner: # True if timeout occured
-            self.respond("[unknown]")
+            self.respond("unknown")
             return
         # if current player won
         if winner == self.board.current_player:
             move_coord = point_to_coord(move, self.board.size)
             move_as_string = format_point(move_coord)
-            self.respond("[" + int_to_color(winner)[0] + " " + move_as_string + "]")
+            self.respond(int_to_color(winner)[0] + " " + move_as_string)
         else:
-            self.respond("[" + int_to_color(winner)[0] + "]")
+            self.respond(int_to_color(winner)[0])
 
 
     def timelimit_cmd(self, args: List[str]) -> None:
@@ -424,7 +424,6 @@ class GtpConnection:
         empty_points: set of empty points on the board
         start_time: number corresponding to when solve_cmd() was entered
         """
-        print(time.process_time() - start_time)
         if time.process_time() - start_time > self.max_seconds: #TODO: put this after recursive call?
             return
         
