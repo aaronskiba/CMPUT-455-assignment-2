@@ -23,6 +23,7 @@ from board_base import (BLACK, BORDER, EMPTY, GO_COLOR, GO_POINT, MAXSIZE,
 from board_util import GoBoardUtil
 from engine import GoEngine
 
+
 # https://stackoverflow.com/questions/366682/how-to-limit-execution-time-of-a-function-call
 class TimeoutException(Exception): pass
 
@@ -368,10 +369,21 @@ class GtpConnection:
         if not legal_moves:
             self.respond('resign')
             return
-        # else try to solve
+
         start_time = time.process_time()
-        empty_points = self.board.get_empty_points()
-        move = self.get_outcome(color, set(empty_points), start_time)
+        try:
+            with time_limit(self.max_seconds):
+                empty_points = self.board.get_empty_points()
+                move = self.get_outcome(self.board.current_player, set(empty_points))
+                is_timeout = False
+        except TimeoutException as e:
+            is_timeout = True
+        if is_timeout:
+            self.respond("unknown")
+            return
+        winner = self.board.get_tt_entry()
+        print(time.process_time() - start_time)
+
         winner = self.board.get_tt_entry()
         # if winning move found for current player
         if winner == color:
@@ -409,7 +421,7 @@ class GtpConnection:
         try:
             with time_limit(self.max_seconds):
                 empty_points = self.board.get_empty_points()
-                move = self.get_outcome(self.board.current_player, set(empty_points), start_time)
+                move = self.get_outcome(self.board.current_player, set(empty_points))
                 is_timeout = False
         except TimeoutException as e:
             is_timeout = True
@@ -436,7 +448,7 @@ class GtpConnection:
         return
 
 
-    def get_outcome(self, color, empty_points: set, start_time):
+    def get_outcome(self, color, empty_points: set):
         """
         Attempts to solve a Go board state
         @return: a winning move for the board state, if one exists for the current color; else None
@@ -465,7 +477,7 @@ class GtpConnection:
             # else outcome not in tt
             empty_points_copy = empty_points.copy()
             empty_points_copy.remove(move)
-            self.get_outcome(3-color, empty_points_copy, start_time)
+            self.get_outcome(3-color, empty_points_copy)
 
             winner = self.board.get_tt_entry()
             self.board.undo_move(move)
