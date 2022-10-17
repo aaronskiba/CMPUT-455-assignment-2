@@ -436,7 +436,7 @@ class GoBoard(object):
             winning_color = self.get_tt_entry()
             # if move results in win or loss
             if winning_color != None:
-                self.board[color] = EMPTY
+                self.board[move] = EMPTY
                 if winning_color == color:
                     # set color as winner of the board state prior to playing the move
                     self.set_tt_entry(color)
@@ -450,7 +450,7 @@ class GoBoard(object):
             self.get_outcome(3-color, empty_points_copy)
 
             winner = self.get_tt_entry()
-            self.board[color] = EMPTY
+            self.board[move] = EMPTY
 
             if winner:
                 if winner == color:
