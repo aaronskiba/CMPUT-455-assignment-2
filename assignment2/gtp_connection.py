@@ -9,8 +9,10 @@ in the Deep-Go project by Isaac Henrion and Amos Storkey
 at the University of Edinburgh.
 """
 import re
+import signal
 import time
 import traceback
+from contextlib import contextmanager
 from sys import stderr, stdin, stdout
 from typing import Any, Callable, Dict, List, Tuple
 
