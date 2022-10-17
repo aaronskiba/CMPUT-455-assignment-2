@@ -363,7 +363,7 @@ class GtpConnection:
             self.board.play_move(move, color)
             move_coord = point_to_coord(move, self.board.size)
             move_as_string = format_point(move_coord)
-            self.respond("move_as_string")
+            self.respond(move_as_string[0].lower() + move_as_string[1])
             return
         # else (timeout or loss) play a random move
         move = self.go_engine.get_move(self.board, color)
@@ -374,9 +374,9 @@ class GtpConnection:
         move_as_string = format_point(move_coord)
         if self.board.is_legal(move, color):
             self.board.play_move(move, color)
-            self.respond(move_as_string)
+            self.respond(move_as_string[0].lower() + move_as_string[1])
         else:
-            self.respond("Illegal move: {}".format(move_as_string))
+            self.respond("Illegal move: {}".format(move_as_string[0].lower() + move_as_string[1]))
             
             
     def solve_cmd(self, args: List[str]) -> None:
@@ -401,7 +401,7 @@ class GtpConnection:
         if winner == self.board.current_player:
             move_coord = point_to_coord(move, self.board.size)
             move_as_string = format_point(move_coord)
-            self.respond(int_to_color(winner)[0] + " " + move_as_string)
+            self.respond(int_to_color(winner)[0] + " " + move_as_string[0].lower() + move_as_string[1])
         else:
             self.respond(int_to_color(winner)[0])
 
