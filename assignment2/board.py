@@ -75,11 +75,10 @@ class GoBoard(object):
     def get_tt_entry(self):
         """
         If stored in the transposition table, return the winner for the current board state, else return None.
-        """
-        arr = []
+        """    
+        key = ""
         for point in self.non_border_points:
-            arr.append(self.board[point])
-        key = ''.join(str(i) for i in arr)
+            key+=str(self.board[point])
         return self.tt.get(key)
     
     def set_tt_entry(self,color):
