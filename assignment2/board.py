@@ -427,13 +427,16 @@ class GoBoard(object):
         empty_points: set of empty points on the board
         start_time: number corresponding to when solve_cmd() was entered
         """
-        
+        opponent_color = 3-color
         for move in empty_points:
             if not self.is_legal_new(move, color):
                 continue
             self.board[move] = color
 
-            winning_color = self.get_tt_entry()
+            key = ""
+            for point in self.non_border_points:
+                key+=str(self.board[point])
+            winning_color = self.tt.get(key)
             # if move results in win or loss
             if winning_color != None:
                 self.board[move] = EMPTY
@@ -447,9 +450,12 @@ class GoBoard(object):
             # else outcome not in tt
             empty_points_copy = empty_points.copy()
             empty_points_copy.remove(move)
-            self.get_outcome(3-color, empty_points_copy)
+            self.get_outcome(opponent_color, empty_points_copy)
 
-            winner = self.get_tt_entry()
+            key = ""
+            for point in self.non_border_points:
+                key+=str(self.board[point])
+            winner = self.tt.get(key)
             self.board[move] = EMPTY
 
             if winner:
@@ -464,4 +470,4 @@ class GoBoard(object):
                 return
             
         # if no legal_moves or all legal_moves are losing
-        self.set_tt_entry(3-color)
+        self.set_tt_entry(opponent_color)
