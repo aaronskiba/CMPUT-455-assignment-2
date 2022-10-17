@@ -144,7 +144,6 @@ class GoBoard(object):
             # if stone is surrounded by opponent stones
             if not current_player_neighbors:
                 # move is either suicide or capture
-                self.board[point] = EMPTY
                 return False
    
             # else point is surrounded and has >=1 neighbor that is own color
@@ -164,7 +163,6 @@ class GoBoard(object):
                         current_player_neighbors.append(nb)
 
             if not liberty_found:
-                self.board[point] = EMPTY
                 return False
           
         if opponent_neighbors:
@@ -199,10 +197,8 @@ class GoBoard(object):
                             stack.append(nb)
 
                 if not liberty_found: # True if block containing p2 has no liberties
-                    self.board[point] = EMPTY
                     return False
         # else move is legal
-        self.board[point] = EMPTY
         return True
 
         
@@ -429,9 +425,9 @@ class GoBoard(object):
         """
         opponent_color = 3-color
         for move in empty_points:
-            if not self.is_legal_new(move, color):
+            if not self.is_legal_new(move, color): # is_legal_new plays the move and checks legality
+                self.board[move] = EMPTY
                 continue
-            self.board[move] = color
 
             key = ""
             for point in self.non_border_points:
