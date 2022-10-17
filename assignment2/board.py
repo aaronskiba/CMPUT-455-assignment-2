@@ -423,87 +423,9 @@ class GoBoard(object):
         empty_points: set of empty points on the board
         start_time: number corresponding to when solve_cmd() was entered
         """
-        opponent_color = 3-color
         for move in empty_points:
-
-            self.board[move] = color
-
-            # sort neighbors of move
-            empty_neighbors = []
-            current_player_neighbors = []
-            opponent_neighbors = []
-            for nb in self.non_border_neighbors[move]:
-                if self.board[nb] == color:
-                    current_player_neighbors.append(nb)
-                elif self.board[nb] == opponent_color:
-                    opponent_neighbors.append(nb)
-                else: #self.board[nb] == EMPTY
-                    empty_neighbors.append(nb)
-
-            # if stone has zero liberties
-            if not empty_neighbors:
-                # if stone is surrounded by opponent stones
-                if not current_player_neighbors:
-                    # move is either suicide or capture
-                    self.board[move] = EMPTY
-                    continue
-    
-                # else move is surrounded and has >=1 neighbor that is own color
-                # determine if block for own color has any liberties
-                visited = set()
-                liberty_found = False # flag for identifying if block including move has at least one liberty
-                while current_player_neighbors and not liberty_found:
-                    p1 = current_player_neighbors.pop()
-                    visited.add(p1)
-                    for nb in self.non_border_neighbors[p1]:
-                        if nb in visited:
-                            continue
-                        if self.board[nb] == EMPTY:
-                            liberty_found = True
-                            break
-                        if self.board[nb] == color:
-                            current_player_neighbors.append(nb)
-
-                if not liberty_found:
-                    self.board[move] = EMPTY
-                    continue
-            
-            if opponent_neighbors:
-                # for suicide, we only had to check for at least one liberty within the block containing move.
-                # for capture, we have to check for at least one liberty FOR EACH opponent_neighbor
-                    # NOTE: Some opponent neighbors may belong to the same block
-                liberty_set = set()
-                for p2 in opponent_neighbors: # opponent neighbors may belong to same or different block(s)
-                    # if nb belongs to a block that was already found to have a liberty
-                    if p2 in liberty_set:
-                        liberty_found = True
-                        continue
-                    # else we need to determine if the block containing this move has a liberty
-                    liberty_found = False
-                    stack = [p2]
-                    visited = set()
-                    while stack and not liberty_found:
-                        p2 = stack.pop()
-                        visited.add(p2)
-                        for nb in self.non_border_neighbors[p2]:
-                            if nb in visited:
-                                continue
-                            if self.board[nb] == EMPTY:
-                                liberty_found = True
-                                liberty_set.update(set(visited)) # visited has at least one liberty (Thus, neighboring points of same color have a liberty too)
-                                break
-                            if self.board[nb] == opponent_color:
-                                if nb in liberty_set:
-                                    liberty_found = True
-                                    break
-                                # else determine if block including non-visited opponent stone has a liberty
-                                stack.append(nb)
-
-                    if not liberty_found: # True if block containing p2 has no liberties
-                        self.board[move] = EMPTY
-                        break
-            # if move was undone (i.e. it was not legal)
-            if self.board[move] == EMPTY:
+            if not self.is_legal_new(move, color): # is_legal_new plays the move and checks legality
+                self.board[move] = EMPTY
                 continue
 
             key = ""
@@ -548,9 +470,9 @@ class GoBoard(object):
 
 
 
-    def is_legal_new2(self, move: GO_POINT, color: GO_COLOR) -> bool:
+    def is_legal_new2(self, point: GO_POINT, color: GO_COLOR) -> bool:
         """
-        Check whether it is legal for color to play on move
+        Check whether it is legal for color to play on point
         This method tries to play the move on a temporary copy of the board.
         This prevents the board from being modified by the move
         """
@@ -558,13 +480,13 @@ class GoBoard(object):
         for move in empty_points:
 
             opponent_color = 3-color
-            self.board[move] = color
+            self.board[point] = color
 
-            # sort neighbors of move
+            # sort neighbors of point
             empty_neighbors = []
             current_player_neighbors = []
             opponent_neighbors = []
-            for nb in self.non_border_neighbors[move]:
+            for nb in self.non_border_neighbors[point]:
                 if self.board[nb] == color:
                     current_player_neighbors.append(nb)
                 elif self.board[nb] == opponent_color:
@@ -577,13 +499,12 @@ class GoBoard(object):
                 # if stone is surrounded by opponent stones
                 if not current_player_neighbors:
                     # move is either suicide or capture
-                    self.board[move] = EMPTY
-                    continue
+                    return False
     
-                # else move is surrounded and has >=1 neighbor that is own color
+                # else point is surrounded and has >=1 neighbor that is own color
                 # determine if block for own color has any liberties
                 visited = set()
-                liberty_found = False # flag for identifying if block including move has at least one liberty
+                liberty_found = False # flag for identifying if block including point has at least one liberty
                 while current_player_neighbors and not liberty_found:
                     p1 = current_player_neighbors.pop()
                     visited.add(p1)
@@ -597,11 +518,10 @@ class GoBoard(object):
                             current_player_neighbors.append(nb)
 
                 if not liberty_found:
-                    self.board[move] = EMPTY
-                    continue
+                    return False
             
             if opponent_neighbors:
-                # for suicide, we only had to check for at least one liberty within the block containing move.
+                # for suicide, we only had to check for at least one liberty within the block containing point.
                 # for capture, we have to check for at least one liberty FOR EACH opponent_neighbor
                     # NOTE: Some opponent neighbors may belong to the same block
                 liberty_set = set()
@@ -610,7 +530,7 @@ class GoBoard(object):
                     if p2 in liberty_set:
                         liberty_found = True
                         continue
-                    # else we need to determine if the block containing this move has a liberty
+                    # else we need to determine if the block containing this point has a liberty
                     liberty_found = False
                     stack = [p2]
                     visited = set()
@@ -632,8 +552,6 @@ class GoBoard(object):
                                 stack.append(nb)
 
                     if not liberty_found: # True if block containing p2 has no liberties
-                        self.board[move] = EMPTY
-                        break
-            # if move was undone (i.e. it was not legal)
-            if self.board[move] == EMPTY:
-                continue
+                        return False
+            # else move is legal
+            return True
