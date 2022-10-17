@@ -431,7 +431,7 @@ class GoBoard(object):
         for move in empty_points:
             if not self.is_legal_new(move, color):
                 continue
-            self.board[color] = move
+            self.board[move] = color
 
             winning_color = self.get_tt_entry()
             # if move results in win or loss
