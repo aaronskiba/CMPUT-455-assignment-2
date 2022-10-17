@@ -339,23 +339,43 @@ class GtpConnection:
             self.respond()
         except Exception as e:
             self.respond("Error: {}".format(str(e)))
-            
     
-
+            
     def genmove_cmd(self, args: List[str]) -> None:
-        """ generate a move for color args[0] in {'b','w'} """
-        # change this method to use your solver
+        """
+        generate a move for color args[0] in {'b','w'}
+        If the game is not over yet, call get_outcome().
+        If get_outcome() times out, play a random move     
+        """
         board_color = args[0].lower()
         color = color_to_int(board_color)
+        legal_moves = GoBoardUtil.generate_legal_moves(self.board, color)
+        print(legal_moves)
+        if not legal_moves:
+            self.respond('[resign]')
+            return
+        # else try to solve
+        start_time = time.process_time()
+        empty_points = self.board.get_empty_points()
+        move = self.get_outcome(color, set(empty_points), start_time)
+        winner = self.board.get_tt_entry()
+        # if winning move found for current player
+        if winner == color:
+            self.board.play_move(move, color)
+            move_coord = point_to_coord(move, self.board.size)
+            move_as_string = format_point(move_coord)
+            self.respond("[" + move_as_string + "]")
+            return
+        # else get a random move
         move = self.go_engine.get_move(self.board, color)
         if move is None:
-            self.respond('unknown')
-            return
-            
+            self.respond('[resign]')
+            return     
         move_coord = point_to_coord(move, self.board.size)
         move_as_string = format_point(move_coord)
         if self.board.is_legal(move, color):
             self.board.play_move(move, color)
+            self.board.current_player = opponent(color)
             self.respond(move_as_string)
         else:
             self.respond("Illegal move: {}".format(move_as_string))
