@@ -50,7 +50,7 @@ class GoBoard(object):
         self._initialize_empty_points(self.board)
         self.non_border_neighbors: dict = self._initialize_non_border_neighbors_dict()
         self.non_border_points: list = list(self.non_border_neighbors.keys())
-        self.tt_sub_arrays = self._initialize_tt_sub_arrays()
+        self.tt_sub_array1, self.tt_sub_array2 = self._initialize_tt_sub_arrays()
         self.tt = {}
         
         
@@ -70,7 +70,7 @@ class GoBoard(object):
         for i in range(self.size):
             arr1.append(self.non_border_points[i*self.size:(i+1)*self.size])
             arr2.append(self.non_border_points[i::self.size])
-        return [arr1,arr2]
+        return arr1,arr2
     
     def get_tt_entry(self):
         """
@@ -94,8 +94,8 @@ class GoBoard(object):
             temp1=""
             temp2=""
             for j in range(self.size):
-                temp1+=str(self.board[self.tt_sub_arrays[0][i][j]])
-                temp2+=str(self.board[self.tt_sub_arrays[1][i][j]])
+                temp1+=str(self.board[self.tt_sub_array1[i][j]])
+                temp2+=str(self.board[self.tt_sub_array2[i][j]])
             key1+=temp1
             key2+=temp1[::-1]
             key3+=temp2
