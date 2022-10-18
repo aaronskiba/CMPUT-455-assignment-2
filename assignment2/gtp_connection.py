@@ -10,7 +10,6 @@ at the University of Edinburgh.
 """
 import re
 import signal
-import time
 import traceback
 from contextlib import contextmanager
 from sys import stderr, stdin, stdout
@@ -370,7 +369,6 @@ class GtpConnection:
             self.respond('resign')
             return
 
-        start_time = time.process_time()
         try:
             with time_limit(self.max_seconds):
                 empty_points = self.board.get_empty_points()
@@ -382,7 +380,6 @@ class GtpConnection:
             self.respond("unknown")
             return
         winner = self.board.get_tt_entry()
-        print(time.process_time() - start_time)
 
         winner = self.board.get_tt_entry()
         # if winning move found for current player
@@ -417,7 +414,6 @@ class GtpConnection:
         - If winner ("b" or "w") is the current player, then move should include a winning move.
         - If the winner {"b" or "w"} is not the current player, then no move should be included. 
         """
-        start_time = time.process_time()
         try:
             with time_limit(self.max_seconds):
                 empty_points = self.board.get_empty_points()
@@ -429,7 +425,6 @@ class GtpConnection:
             self.respond("unknown")
             return
         winner = self.board.get_tt_entry()
-        print(time.process_time() - start_time)
         # if current player won
         if winner == self.board.current_player:
             move_coord = point_to_coord(move, self.board.size)
