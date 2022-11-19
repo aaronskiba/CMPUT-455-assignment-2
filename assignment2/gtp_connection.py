@@ -372,7 +372,7 @@ class GtpConnection:
         try:
             with time_limit(self.max_seconds):
                 empty_points = self.board.get_empty_points()
-                move = self.get_outcome(self.board.current_player, set(empty_points))
+                move = self.board.get_outcome(self.board.current_player, set(empty_points))
                 is_timeout = False
         except TimeoutException as e:
             is_timeout = True
@@ -417,7 +417,7 @@ class GtpConnection:
         try:
             with time_limit(self.max_seconds):
                 empty_points = self.board.get_empty_points()
-                move = self.get_outcome(self.board.current_player, set(empty_points))
+                move = self.board.get_outcome(self.board.current_player, set(empty_points))
                 is_timeout = False
         except TimeoutException as e:
             is_timeout = True
